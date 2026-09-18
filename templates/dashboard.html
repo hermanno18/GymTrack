@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - GymTrack{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Dashboard</h1>
+    <a href="{{ url_for('programs.new') }}"
+       class="px-4 py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">+ New Program</a>
+</div>
+
+<div class="grid md:grid-cols-2 gap-6">
+    <div class="card glow-border rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-4 text-accent">Your Programs</h2>
+        {% if programs %}
+        <ul class="space-y-2">
+            {% for program in programs %}
+            <li class="flex justify-between items-center bg-bg/50 rounded-lg px-3 py-2">
+                <a href="{{ url_for('builder.edit_program', program_id=program.id) }}"
+                   class="hover:text-accent transition">{{ program.name }}</a>
+                <span class="text-xs text-slate-500">{{ program.days|length }} day(s)</span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-400 text-sm">No programs yet. Upload a PDF or start from scratch to get going.</p>
+        {% endif %}
+    </div>
+
+    <div class="card glow-border rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-4 text-accent2">Recent Sessions</h2>
+        {% if recent_sessions %}
+        <ul class="space-y-2">
+            {% for session in recent_sessions %}
+            <li class="flex justify-between items-center bg-bg/50 rounded-lg px-3 py-2">
+                <span>{{ session.date }}</span>
+                <span class="text-xs text-slate-500">
+                    {{ session.program_day.label if session.program_day else "Ad-hoc" }}
+                </span>
+            </li>
+            {% endfor %}
+        </ul>
+        {% else %}
+        <p class="text-slate-400 text-sm">No workouts logged yet.</p>
+        {% endif %}
+        <a href="{{ url_for('workouts.log_picker') }}"
+           class="inline-block mt-4 text-sm text-accent2 hover:underline">Log a workout &rarr;</a>
+    </div>
+</div>
+{% endblock %}

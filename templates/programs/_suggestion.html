@@ -1,0 +1,10 @@
+{% if match %}
+<div class="mt-1 text-xs bg-amber-950/50 border border-amber-500/30 text-amber-300 rounded-lg px-3 py-2 flex items-center justify-between gap-2">
+    <span>Did you mean "<strong>{{ match.name }}</strong>"? ({{ (match.ratio * 100) | round | int }}% match)</span>
+    <button type="button"
+            onclick="this.closest('form').querySelector('[name=name]').value = {{ match.name | tojson }}; this.closest('div').innerHTML = '';"
+            class="px-2 py-1 rounded bg-amber-500/20 hover:bg-amber-500/40 transition whitespace-nowrap">
+        Use this name
+    </button>
+</div>
+{% endif %}

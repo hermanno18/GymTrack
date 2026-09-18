@@ -1,0 +1,17 @@
+{% extends "base.html" %}
+{% block title %}Progress - GymTrack{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">Progress</h1>
+{% if exercises %}
+<div class="grid md:grid-cols-3 gap-4">
+    {% for exercise in exercises %}
+    <a href="{{ url_for('workouts.progress_detail', name_normalized=exercise.name_normalized) }}"
+       class="card glow-border rounded-2xl p-5 hover:border-accent transition">
+        <span class="font-semibold">{{ exercise.name }}</span>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-slate-400">Log a few workouts first, then come back here to see your progress charts.</p>
+{% endif %}
+{% endblock %}

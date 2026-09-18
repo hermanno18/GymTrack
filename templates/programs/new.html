@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}New Program - GymTrack{% endblock %}
+{% block content %}
+<h1 class="text-2xl font-bold mb-6">New Program</h1>
+
+<div class="grid md:grid-cols-2 gap-6">
+    <div class="card glow-border rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-2 text-accent">Upload PDF</h2>
+        <p class="text-sm text-slate-400 mb-4">
+            We'll try to auto-extract your Days and exercises. You'll always get a chance
+            to review and fix anything before it's saved.
+        </p>
+        <form method="post" action="{{ url_for('programs.new_upload') }}" enctype="multipart/form-data" class="space-y-4">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Program name (optional)</label>
+                <input type="text" name="name" placeholder="e.g. Coach Mike - Fall Block"
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">PDF file</label>
+                <input type="file" name="pdf" accept="application/pdf" required
+                       class="w-full text-sm text-slate-300">
+            </div>
+            <button type="submit" class="w-full py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+                Upload &amp; Extract
+            </button>
+        </form>
+    </div>
+
+    <div class="card glow-border rounded-2xl p-6">
+        <h2 class="text-lg font-semibold mb-2 text-accent2">Start From Scratch</h2>
+        <p class="text-sm text-slate-400 mb-4">
+            No PDF, or the auto-extraction just isn't cooperating? Build your program by hand instead.
+        </p>
+        <form method="post" action="{{ url_for('programs.new_manual') }}" class="space-y-4">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Program name</label>
+                <input type="text" name="name" placeholder="e.g. My Program" required
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <button type="submit" class="w-full py-2 rounded-lg bg-accent2 text-white font-semibold hover:shadow-glow transition">
+                Create &amp; Build Manually
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}

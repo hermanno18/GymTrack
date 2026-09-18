@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+{% block title %}Programs - GymTrack{% endblock %}
+{% block content %}
+<div class="flex items-center justify-between mb-6">
+    <h1 class="text-2xl font-bold">Your Programs</h1>
+    <a href="{{ url_for('programs.new') }}"
+       class="px-4 py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">+ New Program</a>
+</div>
+
+{% if programs %}
+<div class="grid md:grid-cols-2 gap-4">
+    {% for program in programs %}
+    <div class="card glow-border rounded-2xl p-5 flex flex-col justify-between">
+        <div>
+            <h2 class="font-semibold text-lg">{{ program.name }}</h2>
+            <p class="text-xs text-slate-500 mt-1">{{ program.days|length }} day(s) &middot; created {{ program.created_at.strftime('%Y-%m-%d') }}</p>
+        </div>
+        <div class="flex gap-3 mt-4 text-sm">
+            <a href="{{ url_for('builder.edit_program', program_id=program.id) }}" class="text-accent hover:underline">Edit</a>
+            <form method="post" action="{{ url_for('programs.delete', program_id=program.id) }}"
+                  onsubmit="return confirm('Delete this program and all its exercises?');">
+                <button type="submit" class="text-red-400 hover:underline">Delete</button>
+            </form>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<p class="text-slate-400">No programs yet. <a href="{{ url_for('programs.new') }}" class="text-accent hover:underline">Create your first one.</a></p>
+{% endif %}
+{% endblock %}

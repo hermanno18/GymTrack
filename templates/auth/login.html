@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Login - GymTrack{% endblock %}
+{% block content %}
+<div class="max-w-sm mx-auto card glow-border rounded-2xl p-8 shadow-glow">
+    <h1 class="text-2xl font-bold mb-6 text-accent">Welcome back</h1>
+    <form method="post" class="space-y-4">
+        <div>
+            <label class="block text-sm text-slate-400 mb-1">Email</label>
+            <input type="email" name="email" required
+                   class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+        </div>
+        <div>
+            <label class="block text-sm text-slate-400 mb-1">Password</label>
+            <input type="password" name="password" required
+                   class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+        </div>
+        <button type="submit"
+                class="w-full py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+            Log In
+        </button>
+    </form>
+    <p class="text-sm text-slate-400 mt-4">
+        No account? <a href="{{ url_for('auth.register') }}" class="text-accent2 hover:underline">Register</a>
+    </p>
+</div>
+{% endblock %}

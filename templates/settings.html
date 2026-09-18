@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Settings - GymTrack{% endblock %}
+{% block content %}
+<div class="max-w-md mx-auto card glow-border rounded-2xl p-8">
+    <h1 class="text-2xl font-bold mb-6 text-accent">Settings</h1>
+    <form method="post" class="space-y-6">
+        <div>
+            <label class="block text-sm text-slate-400 mb-2">Weight Unit</label>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="weight_unit" value="kg" {% if settings.weight_unit == 'kg' %}checked{% endif %}>
+                    Kilograms (kg)
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="weight_unit" value="lb" {% if settings.weight_unit == 'lb' %}checked{% endif %}>
+                    Pounds (lb)
+                </label>
+            </div>
+        </div>
+        <div>
+            <label class="block text-sm text-slate-400 mb-2">Distance Unit</label>
+            <div class="flex gap-4">
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="distance_unit" value="km" {% if settings.distance_unit == 'km' %}checked{% endif %}>
+                    Kilometers (km)
+                </label>
+                <label class="flex items-center gap-2">
+                    <input type="radio" name="distance_unit" value="mi" {% if settings.distance_unit == 'mi' %}checked{% endif %}>
+                    Miles (mi)
+                </label>
+            </div>
+        </div>
+        <button type="submit" class="w-full py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+            Save Settings
+        </button>
+    </form>
+</div>
+{% endblock %}
