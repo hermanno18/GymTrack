@@ -134,5 +134,67 @@
         </div>
     </nav>
     {% endif %}
+
+    <div id="confirm-modal" class="fixed inset-0 z-50 hidden items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+        <div class="card glow-border rounded-2xl p-6 max-w-sm w-full">
+            <p id="confirm-modal-message" class="text-sm text-slate-200 mb-6"></p>
+            <div class="flex gap-3">
+                <button type="button" id="confirm-modal-cancel"
+                        class="tap flex-1 py-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 font-medium">Cancel</button>
+                <button type="button" id="confirm-modal-confirm"
+                        class="tap flex-1 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white font-semibold">Confirm</button>
+            </div>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var modal = document.getElementById('confirm-modal');
+            var messageEl = document.getElementById('confirm-modal-message');
+            var cancelBtn = document.getElementById('confirm-modal-cancel');
+            var confirmBtn = document.getElementById('confirm-modal-confirm');
+            var pendingResolve = null;
+
+            function showModal(message) {
+                messageEl.textContent = message;
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                return new Promise(function (resolve) { pendingResolve = resolve; });
+            }
+            function hideModal(result) {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+                if (pendingResolve) { pendingResolve(result); pendingResolve = null; }
+            }
+            cancelBtn.addEventListener('click', function () { hideModal(false); });
+            confirmBtn.addEventListener('click', function () { hideModal(true); });
+            modal.addEventListener('click', function (evt) { if (evt.target === modal) hideModal(false); });
+
+            // Intercept htmx's hx-confirm and show our own styled modal instead
+            // of the native browser confirm() dialog.
+            document.body.addEventListener('htmx:confirm', function (evt) {
+                if (!evt.detail.question) return;
+                evt.preventDefault();
+                showModal(evt.detail.question).then(function (ok) {
+                    if (ok) evt.detail.issueRequest(true);
+                });
+            });
+
+            // Same treatment for plain (non-htmx) forms marked with
+            // data-confirm="..." instead of the native onsubmit confirm().
+            document.body.addEventListener('submit', function (evt) {
+                var form = evt.target;
+                if (!(form instanceof HTMLFormElement)) return;
+                var question = form.getAttribute('data-confirm');
+                if (!question || form.dataset.confirmed === 'true') return;
+                evt.preventDefault();
+                showModal(question).then(function (ok) {
+                    if (ok) {
+                        form.dataset.confirmed = 'true';
+                        form.submit();
+                    }
+                });
+            });
+        })();
+    </script>
 </body>
 </html>

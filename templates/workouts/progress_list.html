@@ -2,17 +2,43 @@
 {% block title %}Progress - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
-<h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.chart("w-6 h-6 text-accent") }} Progress</h1>
+<h1 class="text-2xl font-bold mb-4 flex items-center gap-2">{{ icons.chart("w-6 h-6 text-accent") }} Progress</h1>
+
 {% if exercises %}
-<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
+<div class="relative mb-4">
+    <span class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-500">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="w-4 h-4"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>
+    </span>
+    <input type="text" id="exercise-search" placeholder="Search exercises..." autocomplete="off"
+           oninput="filterExerciseCards()"
+           class="w-full text-base rounded-lg bg-bg border border-slate-700 pl-9 pr-3 py-2.5 focus:border-accent focus:outline-none">
+</div>
+
+<div id="exercise-grid" class="grid grid-cols-2 md:grid-cols-3 gap-3">
     {% for exercise in exercises %}
     <a href="{{ url_for('workouts.progress_detail', name_normalized=exercise.name_normalized) }}"
-       class="tap card glow-border rounded-2xl p-4 hover:border-accent transition flex items-center gap-2">
+       data-name="{{ exercise.name|lower }}"
+       class="exercise-card tap card glow-border rounded-2xl p-4 hover:border-accent transition flex items-center gap-2">
         {{ icons.dumbbell("w-4 h-4 text-accent shrink-0") }}
         <span class="font-medium text-sm truncate">{{ exercise.name }}</span>
     </a>
     {% endfor %}
 </div>
+<p id="no-results" class="hidden text-slate-500 text-sm mt-4">No exercises match your search.</p>
+
+<script>
+    function filterExerciseCards() {
+        const query = document.getElementById('exercise-search').value.trim().toLowerCase();
+        const cards = document.querySelectorAll('.exercise-card');
+        let visibleCount = 0;
+        cards.forEach(function (card) {
+            const matches = card.dataset.name.includes(query);
+            card.style.display = matches ? '' : 'none';
+            if (matches) visibleCount++;
+        });
+        document.getElementById('no-results').classList.toggle('hidden', visibleCount !== 0);
+    }
+</script>
 {% else %}
 <p class="text-slate-400">Log a few workouts first, then come back here to see your progress charts.</p>
 {% endif %}

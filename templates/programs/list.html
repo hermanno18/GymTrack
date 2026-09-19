@@ -19,7 +19,7 @@
         <div class="flex gap-4 mt-4 text-sm items-center">
             <a href="{{ url_for('builder.edit_program', program_id=program.id) }}" class="tap text-accent flex items-center gap-1">{{ icons.edit("w-4 h-4") }} Edit</a>
             <form method="post" action="{{ url_for('programs.delete', program_id=program.id) }}"
-                  onsubmit="return confirm('Delete this program and all its exercises?');">
+                  data-confirm="Delete this program and all its exercises?">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="tap text-red-400 flex items-center gap-1">{{ icons.trash("w-4 h-4") }} Delete</button>
             </form>
