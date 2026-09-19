@@ -137,6 +137,7 @@ def _create_days_and_exercises(program, parsed_days):
                 target_weight_kg=exercise_data.get("weight_kg"),
                 target_distance_km=exercise_data.get("distance_km"),
                 order_index=exercise_data.get("order_index", 0),
+                notes=exercise_data.get("notes"),
             ))
 
 

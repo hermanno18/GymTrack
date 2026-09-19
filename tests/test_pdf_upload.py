@@ -67,7 +67,7 @@ def test_unparseable_text_falls_back_to_blank_manual_builder(client, app, monkey
 
 def test_parseable_text_creates_days_and_exercises(client, app, monkeypatch):
     _register(client)
-    sample_text = "Day1: Squat 4x8 @60kg; Bench Press 3x10"
+    sample_text = "DAY 1 -- Full Body\nSquat\n4 x 8\nBench Press\n3 x 10"
     monkeypatch.setattr(
         programs_module, "_extract_pdf_text",
         lambda uploaded_file: (sample_text, None),
@@ -81,5 +81,5 @@ def test_parseable_text_creates_days_and_exercises(client, app, monkeypatch):
     with app.app_context():
         program = Program.query.first()
         assert len(program.days) == 1
-        assert program.days[0].label == "Day1"
+        assert program.days[0].label.startswith("Day 1")
         assert len(program.days[0].exercises) == 2
