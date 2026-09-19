@@ -2,6 +2,7 @@
 {% block title %}Your Session Story - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "_photo.html" as photo %}
 
 <div class="text-center mb-8">
     <span class="inline-flex text-fire mb-2 flame-icon">{{ icons.trophy("w-12 h-12") }}</span>
@@ -78,8 +79,10 @@
         <span class="absolute -left-8 top-1 w-6 h-6 rounded-full bg-fire flex items-center justify-center text-bg">
             {{ icons.flag("w-3.5 h-3.5") }}
         </span>
-        <div class="card glow-border rounded-2xl p-4 text-center bg-gradient-to-r from-accent/10 to-fire/10">
-            <p class="font-semibold">Finish line! Nicely done.</p>
+        <div class="relative overflow-hidden card glow-border rounded-2xl p-4 text-center">
+            {{ photo.layer("finish-line.jpg", opacity="opacity-35") }}
+            <div class="absolute inset-0 bg-gradient-to-r from-accent/20 to-fire/20"></div>
+            <p class="relative font-semibold">Finish line! Nicely done.</p>
         </div>
     </div>
 </div>

@@ -2,6 +2,7 @@
 {% block title %}History - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "_photo.html" as photo %}
 {% import "workouts/_session_tile.html" as tiles %}
 <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.calendar("w-6 h-6 text-accent") }} Workout History</h1>
 {% if sessions %}
@@ -11,6 +12,13 @@
     {% endfor %}
 </div>
 {% else %}
-<p class="text-slate-400">No sessions logged yet.</p>
+<div class="relative overflow-hidden rounded-2xl card glow-border p-8 text-center">
+    {{ photo.layer("empty-history.jpg", opacity="opacity-20") }}
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-bg/80"></div>
+    <div class="relative">
+        <p class="text-slate-300 font-medium mb-1">No sessions logged yet</p>
+        <p class="text-slate-400 text-sm">Your workout story starts the moment you log one.</p>
+    </div>
+</div>
 {% endif %}
 {% endblock %}

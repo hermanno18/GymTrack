@@ -2,6 +2,7 @@
 {% block title %}Programs - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "_photo.html" as photo %}
 <div class="flex items-center justify-between mb-6">
     <h1 class="text-2xl font-bold flex items-center gap-2">{{ icons.clipboard("w-6 h-6 text-accent") }} Your Programs</h1>
     <a href="{{ url_for('programs.new') }}"
@@ -28,6 +29,14 @@
     {% endfor %}
 </div>
 {% else %}
-<p class="text-slate-400">No programs yet. <a href="{{ url_for('programs.new') }}" class="text-accent hover:underline">Create your first one.</a></p>
+<div class="relative overflow-hidden rounded-2xl card glow-border p-8 text-center">
+    {{ photo.layer("empty-programs.jpg", opacity="opacity-20") }}
+    <div class="absolute inset-0 bg-gradient-to-b from-transparent to-bg/80"></div>
+    <div class="relative">
+        <p class="text-slate-300 font-medium mb-1">No programs yet</p>
+        <p class="text-slate-400 text-sm mb-4">Upload a coach's PDF or build one from scratch to get moving.</p>
+        <a href="{{ url_for('programs.new') }}" class="tap inline-block px-4 py-2.5 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">Create your first one</a>
+    </div>
+</div>
 {% endif %}
 {% endblock %}

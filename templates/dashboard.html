@@ -2,10 +2,12 @@
 {% block title %}Dashboard - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "_photo.html" as photo %}
 {% import "workouts/_session_tile.html" as tiles %}
 
-<div class="relative overflow-hidden rounded-2xl mb-6 p-6 md:p-8 card glow-border
-            bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-transparent">
+<div class="relative overflow-hidden rounded-2xl mb-6 p-6 md:p-8 card glow-border">
+    {{ photo.layer("dashboard-banner.jpg", opacity="opacity-25") }}
+    <div class="absolute inset-0 bg-gradient-to-br from-cyan-500/20 via-purple-500/20 to-bg/70"></div>
     <span class="hero-watermark absolute -right-6 -bottom-8 text-accent/10 pointer-events-none">
         {{ icons.dumbbell("w-40 h-40") }}
     </span>

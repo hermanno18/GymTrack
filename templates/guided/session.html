@@ -1,5 +1,9 @@
 {% extends "base.html" %}
 {% block title %}{{ day.label }} - Guided Session{% endblock %}
+{% import "_photo.html" as photo %}
+{% block hero_photo %}
+{{ photo.layer("guided-session.jpg", opacity="opacity-10", extra_classes="fixed inset-0 z-0 pointer-events-none") }}
+{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
 

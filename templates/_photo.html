@@ -1,0 +1,11 @@
+{# Shared background-photo layer.
+
+   Uses a plain CSS background-image (not <img src>) on purpose: if the
+   file hasn't been downloaded yet (see static/images/README.md), the
+   browser just shows nothing instead of a broken-image icon, and
+   whatever gradient/color already sits behind it in the parent still
+   reads fine. Zero-setup-required by design. #}
+{% macro layer(filename, opacity="opacity-30", extra_classes="absolute inset-0") %}
+<div class="{{ extra_classes }} bg-cover bg-center {{ opacity }} pointer-events-none"
+     style="background-image: url('{{ url_for('static', filename='images/' + filename) }}')"></div>
+{% endmacro %}
