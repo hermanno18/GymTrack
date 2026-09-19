@@ -111,15 +111,23 @@ def session_finish(day_id):
 @guided_bp.route("/story/<int:session_id>")
 @login_required
 def story(session_id):
+    """
+    Renders a session as an animated storyline. Originally built for
+    Guided Session mode but works for ANY WorkoutSession -- History now
+    links every logged session here (see workouts/history.html) --
+    since it degrades gracefully when work/rest timing wasn't captured
+    (i.e. sessions logged the old-fashioned manual way).
+    """
     workout_session = WorkoutSession.query.filter_by(
         id=session_id, user_id=current_user.id
     ).first_or_404()
     logs = sorted(
         workout_session.logs,
-        key=lambda log: log.started_at or "",
+        key=lambda log: (log.started_at or "", log.id),
     )
     total_work = sum(log.work_seconds or 0 for log in logs)
     total_rest = sum(log.rest_seconds or 0 for log in logs)
+    has_timing_data = any(log.work_seconds is not None or log.rest_seconds is not None for log in logs)
 
     return render_template(
         "guided/story.html",
@@ -128,6 +136,7 @@ def story(session_id):
         settings=current_user.settings,
         total_work=total_work,
         total_rest=total_rest,
+        has_timing_data=has_timing_data,
     )
 
 

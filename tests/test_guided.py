@@ -133,6 +133,32 @@ def test_story_page_shows_timing_and_totals(client, app):
     assert b"Bench Press" in resp.data
     assert b"1:30" in resp.data  # formatted work_seconds
     assert b"0:45" in resp.data  # formatted rest_seconds
+    assert b"Time Working" in resp.data
+    assert b"Time Resting" in resp.data
+
+
+def test_story_page_degrades_gracefully_for_manual_sessions(client, app):
+    """A session logged the old-fashioned manual way (no guided-mode
+    timing data at all) should still render as a storyline -- just
+    without the work/rest time chips, which would otherwise misleadingly
+    show '0:00' instead of 'not tracked'."""
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    log_page = client.get(f"/workouts/log/{day_id}").text
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-03-01",
+        f"ex_{exercise_ids[0]}_sets": "3", f"ex_{exercise_ids[0]}_reps": "8", f"ex_{exercise_ids[0]}_weight": "60",
+    })
+    with app.app_context():
+        session = WorkoutSession.query.filter_by(program_day_id=day_id).first()
+        session_id = session.id
+
+    resp = client.get(f"/guided/story/{session_id}")
+    assert resp.status_code == 200
+    assert b"Bench Press" in resp.data
+    assert b"Time Working" not in resp.data
+    assert b"Time Resting" not in resp.data
+    assert b"Exercise" in resp.data and b"Logged" in resp.data
 
 
 def test_story_page_requires_ownership(client, app):
@@ -163,3 +189,20 @@ def test_guided_session_appears_in_regular_history(client, app):
     resp = client.get("/workouts/history")
     assert resp.status_code == 200
     assert b"6:00 AM" in resp.data  # 06:00 rendered in friendly 12h format
+
+
+def test_history_entries_link_to_their_storyline(client, app):
+    """Every History tile should link straight into the animated story
+    timeline, regardless of whether the session came from guided mode
+    or manual logging."""
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "06:00", "end_time": "06:30",
+        "results": [{"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30, "sets": "3", "reps": "8"}],
+    })
+    with app.app_context():
+        session_id = WorkoutSession.query.filter_by(program_day_id=day_id).first().id
+
+    resp = client.get("/workouts/history")
+    assert f"/guided/story/{session_id}".encode() in resp.data

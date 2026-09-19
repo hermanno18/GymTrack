@@ -5,25 +5,39 @@
 
 <div class="text-center mb-8">
     <span class="inline-flex text-fire mb-2 flame-icon">{{ icons.trophy("w-12 h-12") }}</span>
-    <h1 class="text-2xl font-bold">Your Journey Today</h1>
+    <h1 class="text-2xl font-bold">Your Journey</h1>
     <p class="text-sm text-slate-400">
         {{ session.program_day.label if session.program_day else "Free-form" }} &middot; {{ session.date | full_datetime(session.start_time) }}
     </p>
 </div>
 
-<div class="grid grid-cols-3 gap-3 mb-10">
+{% set chip_count = (1 if (session.start_time or session.end_time) else 0) + (2 if has_timing_data else 1) %}
+<div class="grid grid-cols-{{ chip_count }} gap-3 mb-10">
+    {% if session.start_time or session.end_time %}
     <div class="card glow-border rounded-2xl p-3 text-center">
-        <p class="text-lg font-bold text-accent">{{ session.start_time | time_12h }}&ndash;{{ session.end_time | time_12h }}</p>
+        <p class="text-lg font-bold text-accent">
+            {% if session.start_time and session.end_time %}{{ session.start_time | time_12h }}&ndash;{{ session.end_time | time_12h }}
+            {% elif session.start_time %}Started {{ session.start_time | time_12h }}
+            {% else %}Ended {{ session.end_time | time_12h }}{% endif %}
+        </p>
         <p class="text-[11px] text-slate-500">Session Window</p>
     </div>
+    {% endif %}
+    {% if has_timing_data %}
     <div class="card glow-border rounded-2xl p-3 text-center">
-        <p class="text-lg font-bold text-accent2">{{ total_work | display_duration or '0:00' }}</p>
+        <p class="text-lg font-bold text-accent2">{{ total_work | display_duration }}</p>
         <p class="text-[11px] text-slate-500">Time Working</p>
     </div>
     <div class="card glow-border rounded-2xl p-3 text-center">
-        <p class="text-lg font-bold text-fire">{{ total_rest | display_duration or '0:00' }}</p>
+        <p class="text-lg font-bold text-fire">{{ total_rest | display_duration }}</p>
         <p class="text-[11px] text-slate-500">Time Resting</p>
     </div>
+    {% else %}
+    <div class="card glow-border rounded-2xl p-3 text-center">
+        <p class="text-lg font-bold text-accent2">{{ logs|length }}</p>
+        <p class="text-[11px] text-slate-500">Exercise{{ 's' if logs|length != 1 else '' }} Logged</p>
+    </div>
+    {% endif %}
 </div>
 
 <div class="relative pl-8 mb-10">
