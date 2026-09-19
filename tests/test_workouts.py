@@ -174,3 +174,21 @@ def test_duration_becomes_progress_metric_when_no_weight_or_distance(client, app
     resp = client.get("/workouts/progress/plank")
     assert resp.status_code == 200
     assert b'"value": 90' in resp.data
+
+
+def test_progress_detail_exposes_multiple_metrics_when_available(client, app):
+    """
+    An exercise logged with both weight AND reps should chart both --
+    the old behaviour silently picked one metric and threw the other away.
+    """
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program I", "Day 1", "Squat")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-01-26", f"ex_{ex_id}_sets": "3", f"ex_{ex_id}_reps": "5", f"ex_{ex_id}_weight": "80",
+    })
+    resp = client.get("/workouts/progress/squat")
+    assert resp.status_code == 200
+    assert b'"weight"' in resp.data
+    assert b'"reps"' in resp.data
+    assert b'"sets"' in resp.data
+    assert b'metric-tab' in resp.data  # the switcher UI is present

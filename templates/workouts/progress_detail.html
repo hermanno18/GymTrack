@@ -3,7 +3,16 @@
 {% block content %}
 {% import "_icons.html" as icons %}
 <h1 class="text-2xl font-bold mb-2 flex items-center gap-2">{{ icons.chart("w-6 h-6 text-accent") }} {{ display_name }}</h1>
-<p class="text-sm text-slate-400 mb-6">Tracking: {{ metric }}</p>
+<p class="text-sm text-slate-400 mb-4">Tap a metric to switch what the chart tracks.</p>
+
+<div id="metric-tabs" class="flex flex-wrap gap-2 mb-4">
+    {% for key, data in series.items() %}
+    <button type="button" data-metric="{{ key }}"
+            class="metric-tab tap text-sm px-4 py-2 rounded-full border border-slate-700 hover:border-accent transition">
+        {{ data.label }}
+    </button>
+    {% endfor %}
+</div>
 
 <div class="card glow-border rounded-2xl p-6 mb-6">
     <div style="height: 320px;">
@@ -40,9 +49,10 @@
 </div>
 
 <script>
-    const chartPoints = {{ chart_points | tojson }};
-    const metric = {{ metric | tojson }};
+    const series = {{ series | tojson }};
     const ctx = document.getElementById('progressChart');
+    let currentMetric = Object.keys(series)[0];
+    let chart = null;
 
     function formatSeconds(totalSeconds) {
         const s = Math.round(totalSeconds);
@@ -51,44 +61,63 @@
         return m + ':' + String(sec).padStart(2, '0');
     }
 
-    new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: chartPoints.map(p => p.date),
-            datasets: [{
-                label: metric,
-                data: chartPoints.map(p => p.value),
-                borderColor: '#22d3ee',
-                backgroundColor: 'rgba(34, 211, 238, 0.15)',
-                tension: 0.3,
-                fill: true,
-                pointBackgroundColor: '#a855f7',
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            scales: {
-                x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
-                y: {
-                    ticks: {
-                        color: '#94a3b8',
-                        callback: metric === 'duration' ? (value) => formatSeconds(value) : undefined,
-                    },
-                    grid: { color: 'rgba(148,163,184,0.1)' }
-                }
+    function renderChart(metric) {
+        currentMetric = metric;
+        const data = series[metric];
+        const isDuration = metric === 'duration';
+
+        document.querySelectorAll('.metric-tab').forEach((btn) => {
+            const active = btn.dataset.metric === metric;
+            btn.classList.toggle('bg-accent', active);
+            btn.classList.toggle('text-bg', active);
+            btn.classList.toggle('border-accent', active);
+            btn.classList.toggle('text-slate-300', !active);
+        });
+
+        if (chart) chart.destroy();
+        chart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.points.map(p => p.date),
+                datasets: [{
+                    label: data.label,
+                    data: data.points.map(p => p.value),
+                    borderColor: '#22d3ee',
+                    backgroundColor: 'rgba(34, 211, 238, 0.15)',
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#a855f7',
+                }]
             },
-            plugins: {
-                legend: { labels: { color: '#e2e8f0' } },
-                tooltip: {
-                    callbacks: {
-                        label: metric === 'duration'
-                            ? (item) => formatSeconds(item.parsed.y)
-                            : undefined,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                scales: {
+                    x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
+                    y: {
+                        ticks: {
+                            color: '#94a3b8',
+                            callback: isDuration ? (value) => formatSeconds(value) : undefined,
+                        },
+                        grid: { color: 'rgba(148,163,184,0.1)' }
+                    }
+                },
+                plugins: {
+                    legend: { labels: { color: '#e2e8f0' } },
+                    tooltip: {
+                        callbacks: {
+                            label: isDuration ? (item) => formatSeconds(item.parsed.y) : undefined,
+                        },
                     },
                 },
-            },
-        }
+            }
+        });
+    }
+
+    document.querySelectorAll('.metric-tab').forEach((btn) => {
+        btn.addEventListener('click', () => renderChart(btn.dataset.metric));
     });
+
+    renderChart(currentMetric);
 </script>
 {% endblock %}

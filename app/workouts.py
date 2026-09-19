@@ -217,37 +217,34 @@ def progress_detail(name_normalized):
         .all()
     )
     display_name = db.session.get(Exercise, exercise_ids[0]).name
-    has_weight = any(log.actual_weight_kg is not None for log in logs)
-    has_distance = any(log.actual_distance_km is not None for log in logs)
-    has_duration = any(log.actual_duration_seconds is not None for log in logs)
-    if has_weight:
-        metric = "weight"
-    elif has_distance:
-        metric = "distance"
-    elif has_duration:
-        metric = "duration"
-    else:
-        metric = "reps"
 
-    chart_points = []
-    for log in logs:
-        session_date = log.session.date.isoformat()
-        if metric == "weight":
-            value = kg_to_display(log.actual_weight_kg, unit_settings.weight_unit)
-        elif metric == "distance":
-            value = km_to_display(log.actual_distance_km, unit_settings.distance_unit)
-        elif metric == "duration":
-            value = log.actual_duration_seconds
-        else:
-            value = log.actual_reps
-        if value is not None:
-            chart_points.append({"date": session_date, "value": value})
+    weight_label = "Weight (" + unit_settings.weight_unit + ")"
+    distance_label = "Distance (" + unit_settings.distance_unit + ")"
+    metric_specs = [
+        ("weight", weight_label, lambda log: kg_to_display(log.actual_weight_kg, unit_settings.weight_unit)),
+        ("distance", distance_label, lambda log: km_to_display(log.actual_distance_km, unit_settings.distance_unit)),
+        ("duration", "Time", lambda log: log.actual_duration_seconds),
+        ("reps", "Reps", lambda log: log.actual_reps),
+        ("sets", "Sets", lambda log: log.actual_sets),
+    ]
+
+    series = {}
+    for key, label, getter in metric_specs:
+        points = [
+            {"date": log.session.date.isoformat(), "value": getter(log)}
+            for log in logs if getter(log) is not None
+        ]
+        if points:
+            series[key] = {"label": label, "points": points}
+
+    if not series:
+        flash("No numeric data logged for this exercise yet.", "warning")
+        return redirect(url_for("workouts.progress_list"))
 
     return render_template(
         "workouts/progress_detail.html",
         display_name=display_name,
-        metric=metric,
-        chart_points=chart_points,
+        series=series,
         logs=logs,
         settings=unit_settings,
     )

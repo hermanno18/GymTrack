@@ -32,6 +32,23 @@
             background: radial-gradient(circle at top, #131b2e 0%, #0a0e17 60%);
             padding-bottom: env(safe-area-inset-bottom);
         }
+        /* Faint futuristic HUD grid -- pure CSS, no image assets/hosting
+           needed. Fades out toward the bottom so it doesn't fight with
+           card content. */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.5;
+            background-image:
+                linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(34, 211, 238, 0.07) 1px, transparent 1px);
+            background-size: 42px 42px;
+            -webkit-mask-image: radial-gradient(ellipse 100% 60% at top, black 0%, transparent 75%);
+            mask-image: radial-gradient(ellipse 100% 60% at top, black 0%, transparent 75%);
+        }
         .glow-border { border: 1px solid rgba(34, 211, 238, 0.25); }
 
         @keyframes fadeInUp {
@@ -56,6 +73,13 @@
         }
         .flame-icon { display: inline-block; animation: flicker 1.6s ease-in-out infinite; }
 
+        @keyframes slowSpin {
+            from { transform: rotate(-12deg) scale(1); }
+            50% { transform: rotate(8deg) scale(1.05); }
+            to { transform: rotate(-12deg) scale(1); }
+        }
+        .hero-watermark { animation: slowSpin 10s ease-in-out infinite; }
+
         button, a.tap, .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
         button:active, a.tap:active { transform: scale(0.96); }
 
@@ -79,17 +103,19 @@
                 <a href="{{ url_for('workouts.progress_list') }}" class="hover:text-accent transition">Progress</a>
                 <a href="{{ url_for('workouts.history') }}" class="hover:text-accent transition">History</a>
                 <a href="{{ url_for('settings.edit') }}" class="hover:text-accent transition">Settings</a>
-                <a href="{{ url_for('auth.logout') }}" class="text-slate-400 hover:text-red-400 transition">Logout</a>
+                <a href="{{ url_for('auth.logout') }}" data-confirm="Log out of GymTrack?"
+                   class="text-slate-400 hover:text-red-400 transition">Logout</a>
             </div>
             <div class="flex md:hidden items-center gap-4">
                 <a href="{{ url_for('settings.edit') }}" class="text-slate-300" aria-label="Settings">{{ icons.settings() }}</a>
-                <a href="{{ url_for('auth.logout') }}" class="text-slate-400" aria-label="Logout">{{ icons.power() }}</a>
+                <a href="{{ url_for('auth.logout') }}" data-confirm="Log out of GymTrack?"
+                   class="text-slate-400" aria-label="Logout">{{ icons.power() }}</a>
             </div>
             {% endif %}
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
+    <main class="relative z-10 max-w-5xl mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="mb-6 space-y-2">
@@ -191,6 +217,20 @@
                     if (ok) {
                         form.dataset.confirmed = 'true';
                         form.submit();
+                    }
+                });
+            });
+
+            // Same treatment again for plain links (e.g. Logout) marked
+            // with data-confirm instead of relying on a JS confirm().
+            document.body.addEventListener('click', function (evt) {
+                var link = evt.target.closest('a[data-confirm]');
+                if (!link || link.dataset.confirmed === 'true') return;
+                evt.preventDefault();
+                showModal(link.getAttribute('data-confirm')).then(function (ok) {
+                    if (ok) {
+                        link.dataset.confirmed = 'true';
+                        window.location.href = link.href;
                     }
                 });
             });

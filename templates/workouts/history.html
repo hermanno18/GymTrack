@@ -4,33 +4,45 @@
 {% import "_icons.html" as icons %}
 <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.calendar("w-6 h-6 text-accent") }} Workout History</h1>
 {% if sessions %}
-<div class="space-y-4">
+<div class="space-y-3">
     {% for session in sessions %}
-    <div class="card glow-border rounded-2xl p-5">
-        <div class="flex justify-between items-center mb-1">
-            <span class="font-semibold">{{ session.date }}</span>
-            <span class="text-xs text-slate-500">{{ session.program_day.label if session.program_day else "Ad-hoc" }}</span>
+    <details class="history-accordion card glow-border rounded-2xl overflow-hidden">
+        <summary class="tap flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
+            <div class="min-w-0">
+                <p class="font-semibold">{{ session.date }}</p>
+                <p class="text-xs text-slate-500">
+                    {{ session.program_day.label if session.program_day else "Ad-hoc" }}
+                    &middot; {{ session.logs|length }} exercise{{ 's' if session.logs|length != 1 else '' }}
+                    {% if session.start_time or session.end_time %}
+                    &middot; {{ session.start_time or '?' }}&ndash;{{ session.end_time or '?' }}
+                    {% endif %}
+                </p>
+            </div>
+            <span class="chevron text-slate-500 shrink-0 transition-transform duration-200">{{ icons.chevron_down("w-5 h-5") }}</span>
+        </summary>
+        <div class="px-5 pb-5 border-t border-slate-800 pt-3">
+            {% if session.notes %}<p class="text-sm text-slate-400 mb-2">{{ session.notes }}</p>{% endif %}
+            <ul class="text-sm space-y-1">
+                {% for log in session.logs %}
+                <li class="flex justify-between text-slate-300">
+                    <span>{{ log.exercise.name }}</span>
+                    <span class="text-slate-500">
+                        {% if log.actual_sets or log.actual_reps %}{{ log.actual_sets or '-' }}x{{ log.actual_reps or '-' }}{% endif %}
+                        {% if log.actual_weight_kg %} @ {{ log.actual_weight_kg | display_weight(settings.weight_unit) }}{{ settings.weight_unit }}{% endif %}
+                        {% if log.actual_distance_km %} {{ log.actual_distance_km | display_distance(settings.distance_unit) }}{{ settings.distance_unit }}{% endif %}
+                        {% if log.actual_duration_seconds %} {{ log.actual_duration_seconds | display_duration }}{% endif %}
+                    </span>
+                </li>
+                {% endfor %}
+            </ul>
         </div>
-        {% if session.start_time or session.end_time %}
-        <p class="text-xs text-slate-500 mb-2">{{ session.start_time or '?' }} &ndash; {{ session.end_time or '?' }}</p>
-        {% endif %}
-        {% if session.notes %}<p class="text-sm text-slate-400 mb-2">{{ session.notes }}</p>{% endif %}
-        <ul class="text-sm space-y-1">
-            {% for log in session.logs %}
-            <li class="flex justify-between text-slate-300">
-                <span>{{ log.exercise.name }}</span>
-                <span class="text-slate-500">
-                    {% if log.actual_sets or log.actual_reps %}{{ log.actual_sets or '-' }}x{{ log.actual_reps or '-' }}{% endif %}
-                    {% if log.actual_weight_kg %} @ {{ log.actual_weight_kg | display_weight(settings.weight_unit) }}{{ settings.weight_unit }}{% endif %}
-                    {% if log.actual_distance_km %} {{ log.actual_distance_km | display_distance(settings.distance_unit) }}{{ settings.distance_unit }}{% endif %}
-                    {% if log.actual_duration_seconds %} {{ log.actual_duration_seconds | display_duration }}{% endif %}
-                </span>
-            </li>
-            {% endfor %}
-        </ul>
-    </div>
+    </details>
     {% endfor %}
 </div>
+<style>
+    .history-accordion summary::-webkit-details-marker { display: none; }
+    .history-accordion[open] .chevron { transform: rotate(180deg); }
+</style>
 {% else %}
 <p class="text-slate-400">No sessions logged yet.</p>
 {% endif %}
