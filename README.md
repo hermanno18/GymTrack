@@ -36,5 +36,18 @@ uploaded PDFs are stored under `instance/` (auto-created, git-ignored).
 - **Units are a per-user setting** (kg/lb, km/mi). Everything is stored
   internally in kg/km and converted only for display/input.
 
+## Testing
+
+```bash
+uv pip install -r requirements-dev.txt
+pytest
+```
+
+47 tests covering: unit conversion & fuzzy-name matching, the PDF-text
+parser, auth + multi-user data isolation, the program builder (days/
+exercises/duplicate suggestions), PDF upload fallback paths, workout
+logging, cross-program history carryover, and CSRF protection. Tests are
+grouped one file per feature area under `tests/`.
+
 ## Deployment
 See `DEPLOY.md` for the WHC/cPanel Passenger deployment walkthrough.
