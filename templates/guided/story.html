@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% block title %}Your Session Story - GymTrack{% endblock %}
+{% block content %}
+{% import "_icons.html" as icons %}
+
+<div class="text-center mb-8">
+    <span class="inline-flex text-fire mb-2 flame-icon">{{ icons.trophy("w-12 h-12") }}</span>
+    <h1 class="text-2xl font-bold">Your Journey Today</h1>
+    <p class="text-sm text-slate-400">
+        {{ session.program_day.label if session.program_day else "Free-form" }} &middot; {{ session.date }}
+    </p>
+</div>
+
+<div class="grid grid-cols-3 gap-3 mb-10">
+    <div class="card glow-border rounded-2xl p-3 text-center">
+        <p class="text-lg font-bold text-accent">{{ session.start_time or '?' }}&ndash;{{ session.end_time or '?' }}</p>
+        <p class="text-[11px] text-slate-500">Session Window</p>
+    </div>
+    <div class="card glow-border rounded-2xl p-3 text-center">
+        <p class="text-lg font-bold text-accent2">{{ total_work | display_duration or '0:00' }}</p>
+        <p class="text-[11px] text-slate-500">Time Working</p>
+    </div>
+    <div class="card glow-border rounded-2xl p-3 text-center">
+        <p class="text-lg font-bold text-fire">{{ total_rest | display_duration or '0:00' }}</p>
+        <p class="text-[11px] text-slate-500">Time Resting</p>
+    </div>
+</div>
+
+<div class="relative pl-8 mb-10">
+    <div class="absolute left-3 top-2 bottom-2 w-0.5 bg-gradient-to-b from-accent via-accent2 to-fire"></div>
+
+    {% for log in logs %}
+    <div class="timeline-node relative mb-6 opacity-0 translate-y-4 transition-all duration-700 ease-out">
+        <span class="absolute -left-8 top-1 w-6 h-6 rounded-full bg-panel border-2 border-accent flex items-center justify-center text-accent">
+            {{ icons.dumbbell("w-3.5 h-3.5") }}
+        </span>
+        <div class="card glow-border rounded-2xl p-4">
+            <div class="flex items-center justify-between mb-1.5">
+                <span class="font-semibold">{{ log.exercise.name }}</span>
+                {% if log.started_at %}<span class="text-xs text-slate-500">{{ log.started_at[:5] }}</span>{% endif %}
+            </div>
+            <div class="flex flex-wrap gap-1.5 text-xs">
+                {% if log.actual_sets or log.actual_reps %}
+                <span class="px-2 py-0.5 rounded-full bg-cyan-500/10 text-cyan-300">{{ log.actual_sets or '-' }} &times; {{ log.actual_reps or '-' }}</span>
+                {% endif %}
+                {% if log.actual_weight_kg %}
+                <span class="px-2 py-0.5 rounded-full bg-purple-500/10 text-purple-300">{{ log.actual_weight_kg | display_weight(settings.weight_unit) }} {{ settings.weight_unit }}</span>
+                {% endif %}
+                {% if log.actual_distance_km %}
+                <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300">{{ log.actual_distance_km | display_distance(settings.distance_unit) }} {{ settings.distance_unit }}</span>
+                {% endif %}
+                {% if log.work_seconds %}
+                <span class="px-2 py-0.5 rounded-full bg-accent/10 text-accent flex items-center gap-1">{{ icons.timer("w-3 h-3") }} {{ log.work_seconds | display_duration }}</span>
+                {% endif %}
+                {% if log.rest_seconds %}
+                <span class="px-2 py-0.5 rounded-full bg-fire/10 text-fire flex items-center gap-1">{{ icons.coffee("w-3 h-3") }} {{ log.rest_seconds | display_duration }} rest</span>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+    <div class="timeline-node relative opacity-0 translate-y-4 transition-all duration-700 ease-out">
+        <span class="absolute -left-8 top-1 w-6 h-6 rounded-full bg-fire flex items-center justify-center text-bg">
+            {{ icons.flag("w-3.5 h-3.5") }}
+        </span>
+        <div class="card glow-border rounded-2xl p-4 text-center bg-gradient-to-r from-accent/10 to-fire/10">
+            <p class="font-semibold">Finish line! Nicely done.</p>
+        </div>
+    </div>
+</div>
+
+<div class="flex gap-3">
+    <a href="{{ url_for('workouts.history') }}" class="tap flex-1 py-3 rounded-lg bg-slate-700 text-center hover:bg-slate-600 transition">History</a>
+    <a href="{{ url_for('dashboard.home') }}" class="tap flex-1 py-3 rounded-lg bg-accent text-bg font-semibold text-center hover:shadow-glow transition">Dashboard</a>
+</div>
+
+<script>
+    const nodes = document.querySelectorAll('.timeline-node');
+    const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+            if (entry.isIntersecting) {
+                entry.target.classList.remove('opacity-0', 'translate-y-4');
+                observer.unobserve(entry.target);
+            }
+        });
+    }, { threshold: 0.15 });
+    nodes.forEach((node, i) => {
+        node.style.transitionDelay = (i * 60) + 'ms';
+        observer.observe(node);
+    });
+</script>
+{% endblock %}

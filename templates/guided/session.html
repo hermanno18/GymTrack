@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% block title %}{{ day.label }} - Guided Session{% endblock %}
+{% block content %}
+{% import "_icons.html" as icons %}
+
+<div id="guided-root" class="max-w-lg mx-auto" data-day-id="{{ day.id }}" data-finish-url="{{ url_for('guided.session_finish', day_id=day.id) }}">
+    <div class="flex items-center justify-between mb-4">
+        <h1 class="text-xl font-bold flex items-center gap-2">{{ icons.dumbbell("w-5 h-5 text-accent") }} {{ day.label }}</h1>
+        <span id="progress-label" class="text-xs text-slate-500"></span>
+    </div>
+
+    <div id="progress-dots" class="flex gap-1.5 mb-6"></div>
+
+    <!-- WORK / REST screen -->
+    <div id="active-screen" class="card glow-border rounded-2xl p-6 text-center">
+        <p id="phase-label" class="text-xs uppercase tracking-widest font-semibold mb-1 flex items-center justify-center gap-1.5"></p>
+        <h2 id="exercise-name" class="text-2xl font-bold mb-1"></h2>
+        <p id="exercise-target" class="text-sm text-slate-400 mb-6"></p>
+
+        <div id="timer-ring" class="mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 transition-colors duration-500">
+            <span id="timer-display" class="text-4xl font-mono font-bold tabular-nums">0:00</span>
+        </div>
+
+        <div id="quick-entry" class="grid grid-cols-2 gap-2 mb-6 text-sm">
+            <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Sets</label>
+                <input type="number" id="entry-sets" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Reps</label>
+                <input type="number" id="entry-reps" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Weight ({{ settings.weight_unit }})</label>
+                <input type="number" step="0.1" id="entry-weight" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
+            </div>
+            <div>
+                <label class="block text-[11px] text-slate-500 mb-1">Distance ({{ settings.distance_unit }})</label>
+                <input type="number" step="0.1" id="entry-distance" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
+            </div>
+        </div>
+
+        <button id="phase-button" type="button"
+                class="tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2"></button>
+    </div>
+
+    <!-- SUMMARY / FINISH screen -->
+    <div id="summary-screen" class="hidden card glow-border rounded-2xl p-6 text-center">
+        <span class="inline-flex text-fire mb-2">{{ icons.trophy("w-12 h-12") }}</span>
+        <h2 class="text-2xl font-bold mb-1">Workout Complete!</h2>
+        <p id="summary-stats" class="text-sm text-slate-400 mb-6"></p>
+        <button id="save-button" type="button"
+                class="tap pulse-cta w-full py-4 rounded-xl bg-gradient-to-r from-accent to-accent2 text-bg font-bold text-lg flex items-center justify-center gap-2">
+            {{ icons.flag("w-5 h-5") }} Save &amp; View My Story
+        </button>
+    </div>
+</div>
+
+<script>
+(function () {
+    const exercises = {{ exercises_json | tojson }};
+    const csrfToken = {{ csrf_token() | tojson }};
+    const root = document.getElementById('guided-root');
+    const finishUrl = root.dataset.finishUrl;
+
+    let index = 0;
+    let phase = 'work';           // 'work' | 'rest' | 'summary'
+    let phaseStartedAt = Date.now();
+    let exerciseStartedAtClock = null;
+    let pending = null;           // in-progress result for the current exercise
+    const results = [];
+    const sessionStartClock = formatHM(new Date());
+    let tickHandle = null;
+
+    function pad(n) { return String(n).padStart(2, '0'); }
+    function formatHM(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+    function formatClock(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+    function formatTimer(totalSeconds) {
+        const m = Math.floor(totalSeconds / 60);
+        const s = totalSeconds % 60;
+        return m + ':' + pad(s);
+    }
+
+    const timerDisplay = document.getElementById('timer-display');
+    const timerRing = document.getElementById('timer-ring');
+    const phaseLabel = document.getElementById('phase-label');
+    const exerciseName = document.getElementById('exercise-name');
+    const exerciseTarget = document.getElementById('exercise-target');
+    const phaseButton = document.getElementById('phase-button');
+    const progressLabel = document.getElementById('progress-label');
+    const progressDots = document.getElementById('progress-dots');
+    const activeScreen = document.getElementById('active-screen');
+    const summaryScreen = document.getElementById('summary-screen');
+    const entrySets = document.getElementById('entry-sets');
+    const entryReps = document.getElementById('entry-reps');
+    const entryWeight = document.getElementById('entry-weight');
+    const entryDistance = document.getElementById('entry-distance');
+
+    function renderDots() {
+        progressDots.innerHTML = '';
+        exercises.forEach((_, i) => {
+            const dot = document.createElement('span');
+            dot.className = 'h-1.5 flex-1 rounded-full ' + (i < index ? 'bg-accent' : i === index ? 'bg-accent2' : 'bg-slate-700');
+            progressDots.appendChild(dot);
+        });
+        progressLabel.textContent = 'Exercise ' + Math.min(index + 1, exercises.length) + ' of ' + exercises.length;
+    }
+
+    function targetSummary(ex) {
+        const parts = [];
+        if (ex.target_sets || ex.target_reps) parts.push((ex.target_sets || '-') + ' \u00d7 ' + (ex.target_reps || '-'));
+        if (ex.target_weight_display != null) parts.push(ex.target_weight_display + ' {{ settings.weight_unit }}');
+        if (ex.target_distance_display != null) parts.push(ex.target_distance_display + ' {{ settings.distance_unit }}');
+        if (ex.target_duration_display) parts.push(ex.target_duration_display);
+        if (ex.notes) parts.push(ex.notes);
+        return parts.length ? 'Target: ' + parts.join(' \u00b7 ') : 'No specific target -- just go!';
+    }
+
+    function startWorkPhase() {
+        phase = 'work';
+        const ex = exercises[index];
+        phaseStartedAt = Date.now();
+        exerciseStartedAtClock = formatClock(new Date());
+        entrySets.value = ex.target_sets || '';
+        entryReps.value = ex.target_reps || '';
+        entryWeight.value = ex.target_weight_display != null ? ex.target_weight_display : '';
+        entryDistance.value = ex.target_distance_display != null ? ex.target_distance_display : '';
+
+        exerciseName.textContent = ex.name;
+        exerciseTarget.textContent = targetSummary(ex);
+        phaseLabel.textContent = 'WORKING';
+        phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-accent';
+        timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-accent shadow-glow transition-colors duration-500';
+        phaseButton.textContent = "Done \u2192 Rest";
+        phaseButton.className = 'tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-accent to-accent2 text-bg';
+        renderDots();
+    }
+
+    function startRestPhase() {
+        const ex = exercises[index];
+        pending = {
+            exercise_id: ex.id,
+            started_at: exerciseStartedAtClock,
+            work_seconds: Math.round((Date.now() - phaseStartedAt) / 1000),
+            sets: entrySets.value, reps: entryReps.value,
+            weight: entryWeight.value, distance: entryDistance.value,
+        };
+        phase = 'rest';
+        phaseStartedAt = Date.now();
+        const isLast = index === exercises.length - 1;
+        phaseLabel.textContent = 'RESTING';
+        phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-fire';
+        timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-fire transition-colors duration-500';
+        exerciseName.textContent = 'Take a breather';
+        exerciseTarget.textContent = isLast ? "Last one done -- rest up, then finish!" : ('Next up: ' + exercises[index + 1].name);
+        phaseButton.textContent = isLast ? 'Finish Workout' : 'Continue \u2192 Next Exercise';
+        phaseButton.className = 'tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-fire to-accent2 text-bg';
+    }
+
+    function finishRestAndAdvance() {
+        pending.rest_seconds = Math.round((Date.now() - phaseStartedAt) / 1000);
+        results.push(pending);
+        pending = null;
+        if (index < exercises.length - 1) {
+            index += 1;
+            startWorkPhase();
+        } else {
+            showSummary();
+        }
+    }
+
+    function showSummary() {
+        phase = 'summary';
+        activeScreen.classList.add('hidden');
+        summaryScreen.classList.remove('hidden');
+        const totalWork = results.reduce((sum, r) => sum + (r.work_seconds || 0), 0);
+        const totalRest = results.reduce((sum, r) => sum + (r.rest_seconds || 0), 0);
+        document.getElementById('summary-stats').textContent =
+            exercises.length + ' exercises \u00b7 ' + formatTimer(totalWork) + ' working \u00b7 ' + formatTimer(totalRest) + ' resting';
+    }
+
+    function tick() {
+        const elapsed = Math.floor((Date.now() - phaseStartedAt) / 1000);
+        timerDisplay.textContent = formatTimer(elapsed);
+    }
+
+    phaseButton.addEventListener('click', function () {
+        if (phase === 'work') startRestPhase();
+        else if (phase === 'rest') finishRestAndAdvance();
+    });
+
+    document.getElementById('save-button').addEventListener('click', function (evt) {
+        evt.target.disabled = true;
+        evt.target.textContent = 'Saving...';
+        fetch(finishUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', 'X-CSRFToken': csrfToken },
+            body: JSON.stringify({
+                start_time: sessionStartClock,
+                end_time: formatHM(new Date()),
+                results: results,
+            }),
+        })
+            .then((r) => r.json())
+            .then((data) => { window.location.href = data.redirect; })
+            .catch(() => {
+                evt.target.disabled = false;
+                evt.target.textContent = 'Save & View My Story (retry)';
+            });
+    });
+
+    tickHandle = setInterval(tick, 250);
+    startWorkPhase();
+})();
+</script>
+{% endblock %}

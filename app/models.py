@@ -111,3 +111,10 @@ class WorkoutLog(db.Model):
     actual_distance_km = db.Column(db.Float, nullable=True)
     actual_duration_seconds = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.String(500), nullable=True)
+
+    # Populated only by the Guided Session flow (app/guided.py) -- plain
+    # manual logging via workouts.py never sets these, so they stay null
+    # for all pre-existing history. Powers the animated "story" timeline.
+    started_at = db.Column(db.String(8), nullable=True)   # "HH:MM:SS", wall clock
+    work_seconds = db.Column(db.Integer, nullable=True)   # time actively spent on it
+    rest_seconds = db.Column(db.Integer, nullable=True)   # rest taken right after it

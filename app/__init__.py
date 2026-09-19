@@ -66,9 +66,10 @@ def _register_blueprints(app):
     from .programs import programs_bp
     from .builder import builder_bp
     from .workouts import workouts_bp
+    from .guided import guided_bp
     from .dashboard import dashboard_bp
 
-    for bp in (auth_bp, settings_bp, programs_bp, builder_bp, workouts_bp, dashboard_bp):
+    for bp in (auth_bp, settings_bp, programs_bp, builder_bp, workouts_bp, guided_bp, dashboard_bp):
         app.register_blueprint(bp)
 
 
@@ -104,6 +105,9 @@ def _ensure_schema_migrations():
         ("workout_log", "actual_duration_seconds", "INTEGER"),
         ("workout_session", "start_time", "VARCHAR(5)"),
         ("workout_session", "end_time", "VARCHAR(5)"),
+        ("workout_log", "started_at", "VARCHAR(8)"),
+        ("workout_log", "work_seconds", "INTEGER"),
+        ("workout_log", "rest_seconds", "INTEGER"),
     ]
     with db.engine.connect() as conn:
         for table, column, col_type in columns_to_ensure:
