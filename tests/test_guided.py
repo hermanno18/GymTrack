@@ -206,3 +206,22 @@ def test_history_entries_link_to_their_storyline(client, app):
 
     resp = client.get("/workouts/history")
     assert f"/guided/story/{session_id}".encode() in resp.data
+
+
+def test_dashboard_recent_sessions_matches_history_tile_and_links_to_it(client, app):
+    """Dashboard's Recent Sessions should render the same story-linked
+    tile as History, plus a 'See all' link to the full History page."""
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "09:00", "end_time": "09:30",
+        "results": [{"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30, "sets": "3", "reps": "8"}],
+    })
+    with app.app_context():
+        session_id = WorkoutSession.query.filter_by(program_day_id=day_id).first().id
+
+    resp = client.get("/")
+    assert resp.status_code == 200
+    assert b"See all" in resp.data
+    assert f"/guided/story/{session_id}".encode() in resp.data
+    assert b"View Story" in resp.data

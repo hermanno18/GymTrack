@@ -2,24 +2,12 @@
 {% block title %}History - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "workouts/_session_tile.html" as tiles %}
 <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.calendar("w-6 h-6 text-accent") }} Workout History</h1>
 {% if sessions %}
 <div class="space-y-3">
     {% for session in sessions %}
-    <a href="{{ url_for('guided.story', session_id=session.id) }}"
-       class="tap card glow-border rounded-2xl flex items-center justify-between gap-3 px-5 py-4 hover:border-accent/60 transition">
-        <div class="min-w-0">
-            <p class="font-semibold truncate">{{ session.date | full_datetime(session.start_time) }}</p>
-            <p class="text-xs text-slate-500">
-                {{ session.program_day.label if session.program_day else "Ad-hoc" }}
-                &middot; {{ session.logs|length }} exercise{{ 's' if session.logs|length != 1 else '' }}
-                {% if session.end_time %}&middot; ends {{ session.end_time | time_12h }}{% endif %}
-            </p>
-        </div>
-        <span class="text-accent shrink-0 flex items-center gap-1 text-xs font-semibold">
-            View Story {{ icons.chevron_down("w-4 h-4 -rotate-90") }}
-        </span>
-    </a>
+        {{ tiles.session_tile(session, icons) }}
     {% endfor %}
 </div>
 {% else %}

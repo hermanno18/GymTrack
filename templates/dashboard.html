@@ -2,6 +2,7 @@
 {% block title %}Dashboard - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
+{% import "workouts/_session_tile.html" as tiles %}
 
 <div class="relative overflow-hidden rounded-2xl mb-6 p-6 md:p-8 card glow-border
             bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-transparent">
@@ -44,21 +45,21 @@
     {% endif %}
 </div>
 
-<h2 class="text-lg font-semibold flex items-center gap-2 mb-3">{{ icons.calendar("w-5 h-5 text-accent2") }} Recent Sessions</h2>
-<div class="card glow-border rounded-2xl p-4">
+<div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-semibold flex items-center gap-2">{{ icons.calendar("w-5 h-5 text-accent2") }} Recent Sessions</h2>
     {% if recent_sessions %}
-    <ul class="divide-y divide-slate-800">
-        {% for session in recent_sessions %}
-        <li class="flex justify-between items-center py-2.5">
-            <span>{{ session.date | full_datetime(session.start_time) }}</span>
-            <span class="text-xs text-slate-500">
-                {{ session.program_day.label if session.program_day else "Ad-hoc" }}
-            </span>
-        </li>
-        {% endfor %}
-    </ul>
-    {% else %}
-    <p class="text-slate-400 text-sm">No workouts logged yet -- tap "Log a Workout" above to start your streak.</p>
+    <a href="{{ url_for('workouts.history') }}" class="text-sm text-accent hover:underline">See all &rarr;</a>
     {% endif %}
 </div>
+{% if recent_sessions %}
+<div class="space-y-3">
+    {% for session in recent_sessions %}
+        {{ tiles.session_tile(session, icons) }}
+    {% endfor %}
+</div>
+{% else %}
+<div class="card glow-border rounded-2xl p-4">
+    <p class="text-slate-400 text-sm">No workouts logged yet -- tap "Log a Workout" above to start your streak.</p>
+</div>
+{% endif %}
 {% endblock %}
