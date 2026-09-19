@@ -19,6 +19,7 @@
             <a href="{{ url_for('builder.edit_program', program_id=program.id) }}" class="text-accent hover:underline">Edit</a>
             <form method="post" action="{{ url_for('programs.delete', program_id=program.id) }}"
                   onsubmit="return confirm('Delete this program and all its exercises?');">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit" class="text-red-400 hover:underline">Delete</button>
             </form>
         </div>

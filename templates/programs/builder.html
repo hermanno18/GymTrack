@@ -12,6 +12,7 @@
         <h2 class="text-lg font-semibold text-accent">{{ day.label }}</h2>
         <form hx-post="{{ url_for('builder.delete_day', day_id=day.id) }}" hx-target="#day-{{ day.id }}" hx-swap="outerHTML"
               hx-confirm="Delete {{ day.label }} and all its exercises?">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit" class="text-xs text-red-400 hover:underline">Delete Day</button>
         </form>
     </div>
@@ -39,6 +40,7 @@
                 <td class="text-right space-x-2 whitespace-nowrap">
                     <a href="{{ url_for('builder.edit_exercise', exercise_id=exercise.id) }}" class="text-accent hover:underline">Edit</a>
                     <button hx-post="{{ url_for('builder.delete_exercise', exercise_id=exercise.id) }}"
+                            hx-headers='{"X-CSRFToken": "{{ csrf_token() }}"}'
                             hx-target="#exercise-{{ exercise.id }}" hx-swap="outerHTML"
                             hx-confirm="Delete this exercise?"
                             class="text-red-400 hover:underline">Delete</button>
@@ -53,6 +55,7 @@
 
     <form method="post" action="{{ url_for('builder.add_exercise', day_id=day.id) }}"
           class="grid md:grid-cols-6 gap-2 items-start text-sm">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div class="md:col-span-2">
             <input type="text" name="name" placeholder="Exercise name" required
                    hx-get="{{ url_for('builder.suggest_exercise_name') }}"
@@ -74,6 +77,7 @@
 <div class="card glow-border rounded-2xl p-6">
     <h2 class="text-lg font-semibold text-accent2 mb-3">Add a Day</h2>
     <form method="post" action="{{ url_for('builder.add_day', program_id=program.id) }}" class="flex gap-3">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <input type="text" name="label" placeholder="e.g. Day {{ program.days|length + 1 }}"
                class="flex-1 rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
         <button type="submit" class="px-4 py-2 rounded-lg bg-accent2 text-white font-semibold hover:shadow-glow transition">+ Add Day</button>

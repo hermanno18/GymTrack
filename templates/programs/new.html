@@ -11,6 +11,7 @@
             to review and fix anything before it's saved.
         </p>
         <form method="post" action="{{ url_for('programs.new_upload') }}" enctype="multipart/form-data" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div>
                 <label class="block text-sm text-slate-400 mb-1">Program name (optional)</label>
                 <input type="text" name="name" placeholder="e.g. Coach Mike - Fall Block"
@@ -33,6 +34,7 @@
             No PDF, or the auto-extraction just isn't cooperating? Build your program by hand instead.
         </p>
         <form method="post" action="{{ url_for('programs.new_manual') }}" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <div>
                 <label class="block text-sm text-slate-400 mb-1">Program name</label>
                 <input type="text" name="name" placeholder="e.g. My Program" required

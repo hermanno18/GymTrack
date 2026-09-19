@@ -6,6 +6,7 @@
 </h1>
 
 <form method="post" class="space-y-6">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
     <div class="card glow-border rounded-2xl p-6">
         <div class="grid md:grid-cols-2 gap-4">
             <div>

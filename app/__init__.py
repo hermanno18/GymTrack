@@ -8,11 +8,13 @@ import os
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 db = SQLAlchemy()
 login_manager = LoginManager()
 login_manager.login_view = "auth.login"
 login_manager.login_message_category = "error"
+csrf = CSRFProtect()
 
 
 def create_app(test_config=None):
@@ -43,6 +45,7 @@ def create_app(test_config=None):
 
     db.init_app(app)
     login_manager.init_app(app)
+    csrf.init_app(app)
 
     from . import models  # noqa: F401  (registers models with SQLAlchemy)
 

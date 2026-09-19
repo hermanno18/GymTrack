@@ -4,6 +4,7 @@
 <div class="max-w-sm mx-auto card glow-border rounded-2xl p-8 shadow-glow">
     <h1 class="text-2xl font-bold mb-6 text-accent">Welcome back</h1>
     <form method="post" class="space-y-4">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
             <label class="block text-sm text-slate-400 mb-1">Email</label>
             <input type="email" name="email" required
