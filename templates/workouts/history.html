@@ -9,12 +9,12 @@
     <details class="history-accordion card glow-border rounded-2xl overflow-hidden">
         <summary class="tap flex items-center justify-between gap-3 px-5 py-4 cursor-pointer list-none select-none">
             <div class="min-w-0">
-                <p class="font-semibold">{{ session.date }}</p>
+                <p class="font-semibold">{{ session.date | full_datetime(session.start_time) }}</p>
                 <p class="text-xs text-slate-500">
                     {{ session.program_day.label if session.program_day else "Ad-hoc" }}
                     &middot; {{ session.logs|length }} exercise{{ 's' if session.logs|length != 1 else '' }}
-                    {% if session.start_time or session.end_time %}
-                    &middot; {{ session.start_time or '?' }}&ndash;{{ session.end_time or '?' }}
+                    {% if session.end_time %}
+                    &middot; ends {{ session.end_time | time_12h }}
                     {% endif %}
                 </p>
             </div>

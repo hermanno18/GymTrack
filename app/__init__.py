@@ -81,11 +81,18 @@ def _register_user_loader():
 
 
 def _register_template_filters(app):
-    from .utils import kg_to_display, km_to_display, format_seconds_to_duration
+    from .utils import (
+        kg_to_display, km_to_display, format_seconds_to_duration,
+        format_full_date, format_short_date, format_time_12h, format_full_datetime,
+    )
 
     app.jinja_env.filters["display_weight"] = kg_to_display
     app.jinja_env.filters["display_distance"] = km_to_display
     app.jinja_env.filters["display_duration"] = format_seconds_to_duration
+    app.jinja_env.filters["full_date"] = format_full_date
+    app.jinja_env.filters["short_date"] = format_short_date
+    app.jinja_env.filters["time_12h"] = format_time_12h
+    app.jinja_env.filters["full_datetime"] = format_full_datetime
 
 
 def _ensure_schema_migrations():

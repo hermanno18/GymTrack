@@ -7,13 +7,13 @@
     <span class="inline-flex text-fire mb-2 flame-icon">{{ icons.trophy("w-12 h-12") }}</span>
     <h1 class="text-2xl font-bold">Your Journey Today</h1>
     <p class="text-sm text-slate-400">
-        {{ session.program_day.label if session.program_day else "Free-form" }} &middot; {{ session.date }}
+        {{ session.program_day.label if session.program_day else "Free-form" }} &middot; {{ session.date | full_datetime(session.start_time) }}
     </p>
 </div>
 
 <div class="grid grid-cols-3 gap-3 mb-10">
     <div class="card glow-border rounded-2xl p-3 text-center">
-        <p class="text-lg font-bold text-accent">{{ session.start_time or '?' }}&ndash;{{ session.end_time or '?' }}</p>
+        <p class="text-lg font-bold text-accent">{{ session.start_time | time_12h }}&ndash;{{ session.end_time | time_12h }}</p>
         <p class="text-[11px] text-slate-500">Session Window</p>
     </div>
     <div class="card glow-border rounded-2xl p-3 text-center">
@@ -37,7 +37,7 @@
         <div class="card glow-border rounded-2xl p-4">
             <div class="flex items-center justify-between mb-1.5">
                 <span class="font-semibold">{{ log.exercise.name }}</span>
-                {% if log.started_at %}<span class="text-xs text-slate-500">{{ log.started_at[:5] }}</span>{% endif %}
+                {% if log.started_at %}<span class="text-xs text-slate-500">{{ log.started_at | time_12h }}</span>{% endif %}
             </div>
             <div class="flex flex-wrap gap-1.5 text-xs">
                 {% if log.actual_sets or log.actual_reps %}

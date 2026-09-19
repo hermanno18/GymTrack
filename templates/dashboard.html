@@ -50,7 +50,7 @@
     <ul class="divide-y divide-slate-800">
         {% for session in recent_sessions %}
         <li class="flex justify-between items-center py-2.5">
-            <span>{{ session.date }}</span>
+            <span>{{ session.date | full_datetime(session.start_time) }}</span>
             <span class="text-xs text-slate-500">
                 {{ session.program_day.label if session.program_day else "Ad-hoc" }}
             </span>

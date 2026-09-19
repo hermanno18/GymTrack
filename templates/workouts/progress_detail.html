@@ -36,7 +36,7 @@
         <tbody>
             {% for log in logs %}
             <tr class="border-b border-slate-800">
-                <td class="py-2">{{ log.session.date }}</td>
+                <td class="py-2">{{ log.session.date | full_date }}</td>
                 <td>{{ log.actual_sets or '-' }}</td>
                 <td>{{ log.actual_reps or '-' }}</td>
                 <td>{{ (log.actual_weight_kg | display_weight(settings.weight_unit)) if log.actual_weight_kg is not none else '-' }}</td>
@@ -78,7 +78,7 @@
         chart = new Chart(ctx, {
             type: 'line',
             data: {
-                labels: data.points.map(p => p.date),
+                labels: data.points.map(p => p.label),
                 datasets: [{
                     label: data.label,
                     data: data.points.map(p => p.value),

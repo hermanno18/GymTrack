@@ -18,7 +18,7 @@ from . import db
 from .models import Program, ProgramDay, Exercise, WorkoutSession, WorkoutLog
 from .utils import (
     normalize_name, display_to_kg, display_to_km, kg_to_display, km_to_display,
-    parse_duration_to_seconds,
+    parse_duration_to_seconds, format_short_date,
 )
 
 workouts_bp = Blueprint("workouts", __name__, url_prefix="/workouts")
@@ -231,7 +231,7 @@ def progress_detail(name_normalized):
     series = {}
     for key, label, getter in metric_specs:
         points = [
-            {"date": log.session.date.isoformat(), "value": getter(log)}
+            {"date": log.session.date.isoformat(), "label": format_short_date(log.session.date), "value": getter(log)}
             for log in logs if getter(log) is not None
         ]
         if points:

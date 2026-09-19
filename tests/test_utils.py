@@ -1,8 +1,11 @@
 """Unit tests for unit conversion, name normalization, and fuzzy matching."""
+from datetime import date
+
 from app.utils import (
     normalize_name, kg_to_display, display_to_kg,
     km_to_display, display_to_km, find_similar_exercise,
     parse_duration_to_seconds, format_seconds_to_duration,
+    format_full_date, format_short_date, format_time_12h, format_full_datetime,
 )
 
 
@@ -107,3 +110,49 @@ def test_format_seconds_to_duration_none():
 def test_duration_round_trip():
     seconds = parse_duration_to_seconds("5:09")
     assert format_seconds_to_duration(seconds) == "5:09"
+
+
+def test_format_full_date():
+    assert format_full_date(date(2026, 7, 18)) == "July 18, 2026"
+
+
+def test_format_full_date_single_digit_day_has_no_leading_zero():
+    assert format_full_date(date(2026, 7, 8)) == "July 8, 2026"
+
+
+def test_format_full_date_none():
+    assert format_full_date(None) == ""
+
+
+def test_format_short_date():
+    assert format_short_date(date(2026, 7, 18)) == "Jul 18"
+
+
+def test_format_time_12h_morning():
+    assert format_time_12h("08:00") == "8:00 AM"
+
+
+def test_format_time_12h_evening():
+    assert format_time_12h("18:00") == "6:00 PM"
+
+
+def test_format_time_12h_midnight_and_noon():
+    assert format_time_12h("00:00") == "12:00 AM"
+    assert format_time_12h("12:00") == "12:00 PM"
+
+
+def test_format_time_12h_accepts_hh_mm_ss():
+    assert format_time_12h("18:00:05") == "6:00 PM"
+
+
+def test_format_time_12h_blank():
+    assert format_time_12h("") == ""
+    assert format_time_12h(None) == ""
+
+
+def test_format_full_datetime_with_time():
+    assert format_full_datetime(date(2026, 7, 18), "08:00") == "July 18, 2026 at 8:00 AM"
+
+
+def test_format_full_datetime_without_time():
+    assert format_full_datetime(date(2026, 7, 18), None) == "July 18, 2026"

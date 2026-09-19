@@ -162,4 +162,4 @@ def test_guided_session_appears_in_regular_history(client, app):
     })
     resp = client.get("/workouts/history")
     assert resp.status_code == 200
-    assert b"06:00" in resp.data
+    assert b"6:00 AM" in resp.data  # 06:00 rendered in friendly 12h format

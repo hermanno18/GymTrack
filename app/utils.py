@@ -100,3 +100,41 @@ def format_seconds_to_duration(total_seconds):
     if hours:
         return f"{hours}:{minutes:02d}:{seconds:02d}"
     return f"{minutes}:{seconds:02d}"
+
+
+def format_full_date(value):
+    """date/datetime -> 'July 18, 2026'. Deliberately avoids strftime's
+    %-d/%e (day-without-leading-zero) since that flag isn't portable
+    across Windows/Linux -- this app is developed on Windows but
+    deployed on Linux (WHC/cPanel)."""
+    if value is None:
+        return ""
+    return f"{value.strftime('%B')} {value.day}, {value.year}"
+
+
+def format_short_date(value):
+    """date/datetime -> 'Jul 18'. Used where space is tight (chart axes)."""
+    if value is None:
+        return ""
+    return f"{value.strftime('%b')} {value.day}"
+
+
+def format_time_12h(value):
+    """'HH:MM' or 'HH:MM:SS' (24h) -> '6:00 PM'. Blank/None -> ''."""
+    if not value:
+        return ""
+    parts = value.split(":")
+    hour = int(parts[0])
+    minute = int(parts[1]) if len(parts) > 1 else 0
+    period = "AM" if hour < 12 else "PM"
+    hour_12 = hour % 12 or 12
+    return f"{hour_12}:{minute:02d} {period}"
+
+
+def format_full_datetime(date_value, time_value=None):
+    """Combines a date and an optional 'HH:MM' time into
+    'July 18, 2026 at 6:00 PM' (or just the date if no time given)."""
+    full_date = format_full_date(date_value)
+    if not time_value:
+        return full_date
+    return f"{full_date} at {format_time_12h(time_value)}"
