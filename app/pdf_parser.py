@@ -13,7 +13,7 @@ not this regex.
 """
 import re
 
-DAY_HEADER_RE = re.compile(r"(?im)^\s*(day\s*\d+[a-z]?)\s*[:\-]?\s*(.*)$")
+DAY_HEADER_RE = re.compile(r"(?im)^[ \t]*(day[ \t]*\d+[a-z]?)[ \t]*[:\-]?[ \t]*(.*)$")
 SETS_REPS_RE = re.compile(r"(\d+)\s*(?:x|\*|sets?\s*of)\s*(\d+)", re.I)
 SETS_ONLY_RE = re.compile(r"(\d+)\s*sets?\b", re.I)
 REPS_ONLY_RE = re.compile(r"(\d+)\s*reps?\b", re.I)
