@@ -192,3 +192,56 @@ def test_progress_detail_exposes_multiple_metrics_when_available(client, app):
     assert b'"reps"' in resp.data
     assert b'"sets"' in resp.data
     assert b'metric-tab' in resp.data  # the switcher UI is present
+
+
+def test_same_day_sessions_ordered_most_recent_first_in_history(client, app):
+    """WorkoutSession.date has no time component, so two sessions logged
+    on the same calendar day need a tiebreaker (session id) or the DB is
+    free to return them in an arbitrary order. History must always show
+    the most-recently-logged session first, even when dates tie."""
+    _register(client)
+    _, morning_day_id, morning_ex_id = _make_program_with_exercise(
+        client, app, "Same Day Program", "Morning Session", "Row"
+    )
+    _, evening_day_id, evening_ex_id = _make_program_with_exercise(
+        client, app, "Same Day Program 2", "Evening Session", "Bench Press"
+    )
+    # Logged in this order -> morning session gets the lower id, evening
+    # session (logged second, same calendar date) gets the higher id.
+    client.post(f"/workouts/log/{morning_day_id}", data={
+        "date": "2026-03-01", f"ex_{morning_ex_id}_sets": "1",
+    })
+    client.post(f"/workouts/log/{evening_day_id}", data={
+        "date": "2026-03-01", f"ex_{evening_ex_id}_sets": "1",
+    })
+
+    resp = client.get("/workouts/history")
+    assert resp.status_code == 200
+    evening_pos = resp.data.find(b"Evening Session")
+    morning_pos = resp.data.find(b"Morning Session")
+    assert evening_pos != -1 and morning_pos != -1
+    assert evening_pos < morning_pos  # most recently logged appears first
+
+
+def test_same_day_sessions_ordered_most_recent_first_on_dashboard(client, app):
+    """Same bug, dashboard's Recent Sessions widget flavor."""
+    _register(client)
+    _, morning_day_id, morning_ex_id = _make_program_with_exercise(
+        client, app, "Dash Same Day A", "Morning Session", "Row"
+    )
+    _, evening_day_id, evening_ex_id = _make_program_with_exercise(
+        client, app, "Dash Same Day B", "Evening Session", "Bench Press"
+    )
+    client.post(f"/workouts/log/{morning_day_id}", data={
+        "date": "2026-03-02", f"ex_{morning_ex_id}_sets": "1",
+    })
+    client.post(f"/workouts/log/{evening_day_id}", data={
+        "date": "2026-03-02", f"ex_{evening_ex_id}_sets": "1",
+    })
+
+    resp = client.get("/")
+    assert resp.status_code == 200
+    evening_pos = resp.data.find(b"Evening Session")
+    morning_pos = resp.data.find(b"Morning Session")
+    assert evening_pos != -1 and morning_pos != -1
+    assert evening_pos < morning_pos

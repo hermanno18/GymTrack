@@ -173,7 +173,9 @@ def _get_or_create_adhoc_day():
 def history():
     sessions = (
         WorkoutSession.query.filter_by(user_id=current_user.id)
-        .order_by(WorkoutSession.date.desc())
+        # Secondary sort by id: date alone has no time component, so
+        # same-day sessions need a tiebreaker to guarantee most-recent-first.
+        .order_by(WorkoutSession.date.desc(), WorkoutSession.id.desc())
         .all()
     )
     return render_template("workouts/history.html", sessions=sessions, settings=current_user.settings)
@@ -213,7 +215,7 @@ def progress_detail(name_normalized):
     logs = (
         WorkoutLog.query.join(WorkoutSession)
         .filter(WorkoutLog.exercise_id.in_(exercise_ids), WorkoutSession.user_id == current_user.id)
-        .order_by(WorkoutSession.date)
+        .order_by(WorkoutSession.date, WorkoutSession.id)
         .all()
     )
     display_name = db.session.get(Exercise, exercise_ids[0]).name
