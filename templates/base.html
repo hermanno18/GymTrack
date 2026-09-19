@@ -2,7 +2,8 @@
 <html lang="en" class="dark">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0a0e17">
     <title>{% block title %}GymTrack{% endblock %}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/htmx.org@1.9.12"></script>
@@ -17,6 +18,7 @@
                         panel: '#111827',
                         accent: '#22d3ee',
                         accent2: '#a855f7',
+                        fire: '#fb923c',
                     },
                     boxShadow: {
                         glow: '0 0 18px rgba(34, 211, 238, 0.35)',
@@ -26,19 +28,52 @@
         };
     </script>
     <style>
-        body { background: radial-gradient(circle at top, #131b2e 0%, #0a0e17 60%); }
+        body {
+            background: radial-gradient(circle at top, #131b2e 0%, #0a0e17 60%);
+            padding-bottom: env(safe-area-inset-bottom);
+        }
         .glow-border { border: 1px solid rgba(34, 211, 238, 0.25); }
-        .card { background: rgba(17, 24, 39, 0.75); backdrop-filter: blur(6px); }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .card {
+            background: rgba(17, 24, 39, 0.75);
+            backdrop-filter: blur(6px);
+            animation: fadeInUp 0.35s ease-out both;
+        }
+
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 10px rgba(34, 211, 238, 0.35); }
+            50% { box-shadow: 0 0 22px rgba(34, 211, 238, 0.75); }
+        }
+        .pulse-cta { animation: pulseGlow 2.4s ease-in-out infinite; }
+
+        @keyframes flicker {
+            0%, 100% { transform: scale(1) rotate(-3deg); color: #fb923c; }
+            50% { transform: scale(1.15) rotate(3deg); color: #fbbf24; }
+        }
+        .flame-icon { display: inline-block; animation: flicker 1.6s ease-in-out infinite; }
+
+        button, a.tap, .card { transition: transform 0.15s ease, box-shadow 0.15s ease; }
+        button:active, a.tap:active { transform: scale(0.96); }
+
+        .bottom-nav { padding-bottom: max(0.5rem, env(safe-area-inset-bottom)); }
     </style>
 </head>
 <body class="min-h-screen text-slate-100 font-sans">
-    <nav class="glow-border border-b bg-panel/70 backdrop-blur sticky top-0 z-10">
+    {% import "_icons.html" as icons %}
+
+    <nav class="glow-border border-b bg-panel/70 backdrop-blur sticky top-0 z-20">
         <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
-            <a href="{{ url_for('dashboard.home') }}" class="text-xl font-bold tracking-wide text-accent">
+            <a href="{{ url_for('dashboard.home') if current_user.is_authenticated else url_for('auth.login') }}"
+               class="text-xl font-bold tracking-wide text-accent flex items-center gap-2">
+                <span class="flame-icon">{{ icons.flame("w-5 h-5") }}</span>
                 GYM<span class="text-accent2">TRACK</span>
             </a>
             {% if current_user.is_authenticated %}
-            <div class="flex items-center gap-4 text-sm">
+            <div class="hidden md:flex items-center gap-5 text-sm">
                 <a href="{{ url_for('programs.list_programs') }}" class="hover:text-accent transition">Programs</a>
                 <a href="{{ url_for('workouts.log_picker') }}" class="hover:text-accent transition">Log Workout</a>
                 <a href="{{ url_for('workouts.progress_list') }}" class="hover:text-accent transition">Progress</a>
@@ -46,20 +81,27 @@
                 <a href="{{ url_for('settings.edit') }}" class="hover:text-accent transition">Settings</a>
                 <a href="{{ url_for('auth.logout') }}" class="text-slate-400 hover:text-red-400 transition">Logout</a>
             </div>
+            <div class="flex md:hidden items-center gap-4">
+                <a href="{{ url_for('settings.edit') }}" class="text-slate-300" aria-label="Settings">{{ icons.settings() }}</a>
+                <a href="{{ url_for('auth.logout') }}" class="text-slate-400" aria-label="Logout">{{ icons.power() }}</a>
+            </div>
             {% endif %}
         </div>
     </nav>
 
-    <main class="max-w-5xl mx-auto px-4 py-8">
+    <main class="max-w-5xl mx-auto px-4 py-6 md:py-8 pb-24 md:pb-8">
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="mb-6 space-y-2">
                 {% for category, message in messages %}
-                    <div class="px-4 py-3 rounded-lg text-sm glow-border
+                    <div class="px-4 py-3 rounded-lg text-sm glow-border card flex items-start gap-2
                         {% if category == 'error' %} bg-red-950/60 text-red-300 border-red-500/40
                         {% elif category == 'warning' %} bg-amber-950/60 text-amber-300 border-amber-500/40
                         {% else %} bg-cyan-950/50 text-cyan-300 border-cyan-500/30 {% endif %}">
-                        {{ message }}
+                        <span class="mt-0.5 shrink-0">
+                            {% if category == 'success' %}{{ icons.check_circle("w-4 h-4") }}{% else %}{{ icons.alert("w-4 h-4") }}{% endif %}
+                        </span>
+                        <span>{{ message }}</span>
                     </div>
                 {% endfor %}
                 </div>
@@ -68,5 +110,29 @@
 
         {% block content %}{% endblock %}
     </main>
+
+    {% if current_user.is_authenticated %}
+    <nav class="bottom-nav md:hidden fixed bottom-0 inset-x-0 z-20 bg-panel/95 backdrop-blur border-t border-cyan-500/20">
+        <div class="grid grid-cols-5 text-center text-[10px] text-slate-400">
+            <a href="{{ url_for('dashboard.home') }}" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
+                {{ icons.home() }}<span>Home</span>
+            </a>
+            <a href="{{ url_for('programs.list_programs') }}" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
+                {{ icons.clipboard() }}<span>Plans</span>
+            </a>
+            <a href="{{ url_for('workouts.log_picker') }}" class="tap flex flex-col items-center -mt-5">
+                <span class="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-accent2 text-bg flex items-center justify-center shadow-glow pulse-cta">
+                    {{ icons.plus("w-7 h-7") }}
+                </span>
+            </a>
+            <a href="{{ url_for('workouts.progress_list') }}" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
+                {{ icons.chart() }}<span>Progress</span>
+            </a>
+            <a href="{{ url_for('workouts.history') }}" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
+                {{ icons.calendar() }}<span>History</span>
+            </a>
+        </div>
+    </nav>
+    {% endif %}
 </body>
 </html>

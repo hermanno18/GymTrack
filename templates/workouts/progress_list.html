@@ -1,13 +1,15 @@
 {% extends "base.html" %}
 {% block title %}Progress - GymTrack{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Progress</h1>
+{% import "_icons.html" as icons %}
+<h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.chart("w-6 h-6 text-accent") }} Progress</h1>
 {% if exercises %}
-<div class="grid md:grid-cols-3 gap-4">
+<div class="grid grid-cols-2 md:grid-cols-3 gap-3">
     {% for exercise in exercises %}
     <a href="{{ url_for('workouts.progress_detail', name_normalized=exercise.name_normalized) }}"
-       class="card glow-border rounded-2xl p-5 hover:border-accent transition">
-        <span class="font-semibold">{{ exercise.name }}</span>
+       class="tap card glow-border rounded-2xl p-4 hover:border-accent transition flex items-center gap-2">
+        {{ icons.dumbbell("w-4 h-4 text-accent shrink-0") }}
+        <span class="font-medium text-sm truncate">{{ exercise.name }}</span>
     </a>
     {% endfor %}
 </div>

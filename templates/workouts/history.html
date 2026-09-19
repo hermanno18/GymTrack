@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}History - GymTrack{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Workout History</h1>
+{% import "_icons.html" as icons %}
+<h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.calendar("w-6 h-6 text-accent") }} Workout History</h1>
 {% if sessions %}
 <div class="space-y-4">
     {% for session in sessions %}

@@ -1,90 +1,101 @@
 {% extends "base.html" %}
 {% block title %}Log Workout - GymTrack{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">
-    {% if day %}Log: {{ day.label }}{% else %}Log Free-form Session{% endif %}
+{% import "_icons.html" as icons %}
+
+<h1 class="text-2xl font-bold mb-6 flex items-center gap-2">
+    {{ icons.dumbbell("w-6 h-6 text-accent") }}
+    {% if day %}{{ day.label }}{% else %}Free-form Session{% endif %}
 </h1>
 
-<form method="post" class="space-y-6">
+<form method="post" class="space-y-5">
     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-    <div class="card glow-border rounded-2xl p-6">
-        <div class="grid md:grid-cols-2 gap-4">
+
+    <div class="card glow-border rounded-2xl p-4 md:p-6">
+        <div class="grid grid-cols-2 gap-4">
             <div>
-                <label class="block text-sm text-slate-400 mb-1">Date</label>
+                <label class="block text-xs text-slate-400 mb-1">Date</label>
                 <input type="date" name="date" value="{{ today }}" required
-                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2">
+                       class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             </div>
             <div>
-                <label class="block text-sm text-slate-400 mb-1">Session Notes (optional)</label>
-                <input type="text" name="session_notes" class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2">
+                <label class="block text-xs text-slate-400 mb-1">Notes (optional)</label>
+                <input type="text" name="session_notes" class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             </div>
         </div>
     </div>
 
     {% if day and day.exercises %}
-    <div class="card glow-border rounded-2xl p-6">
-        <h2 class="font-semibold text-accent mb-4">Planned Exercises</h2>
-        <table class="w-full text-sm">
-            <thead>
-                <tr class="text-left text-slate-500 border-b border-slate-700">
-                    <th class="py-2">Exercise</th>
-                    <th>Target</th>
-                    <th>Sets</th>
-                    <th>Reps</th>
-                    <th>Weight ({{ settings.weight_unit }})</th>
-                    <th>Distance ({{ settings.distance_unit }})</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for exercise in day.exercises %}
-                <tr class="border-b border-slate-800">
-                    <td class="py-2">{{ exercise.name }}</td>
-                    <td class="text-xs text-slate-500 whitespace-nowrap">
-                        {{ exercise.target_sets or '-' }}x{{ exercise.target_reps or '-' }}
-                        {% if exercise.target_weight_kg %} @ {{ exercise.target_weight_kg | display_weight(settings.weight_unit) }}{{ settings.weight_unit }}{% endif %}
-                        {% if exercise.target_distance_km %} {{ exercise.target_distance_km | display_distance(settings.distance_unit) }}{{ settings.distance_unit }}{% endif %}
-                    </td>
-                    <td><input type="number" name="ex_{{ exercise.id }}_sets" class="w-16 rounded bg-bg border border-slate-700 px-2 py-1"></td>
-                    <td><input type="number" name="ex_{{ exercise.id }}_reps" class="w-16 rounded bg-bg border border-slate-700 px-2 py-1"></td>
-                    <td><input type="number" step="0.1" name="ex_{{ exercise.id }}_weight" class="w-20 rounded bg-bg border border-slate-700 px-2 py-1"></td>
-                    <td><input type="number" step="0.1" name="ex_{{ exercise.id }}_distance" class="w-20 rounded bg-bg border border-slate-700 px-2 py-1"></td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+    <div class="space-y-3">
+        {% for exercise in day.exercises %}
+        <div class="card glow-border rounded-2xl p-4">
+            <p class="font-semibold mb-0.5">{{ exercise.name }}</p>
+            <p class="text-xs text-slate-500 mb-3">
+                Target: {{ exercise.target_sets or '-' }} &times; {{ exercise.target_reps or '-' }}
+                {% if exercise.target_weight_kg %} @ {{ exercise.target_weight_kg | display_weight(settings.weight_unit) }}{{ settings.weight_unit }}{% endif %}
+                {% if exercise.target_distance_km %} {{ exercise.target_distance_km | display_distance(settings.distance_unit) }}{{ settings.distance_unit }}{% endif %}
+                {% if exercise.notes %} &middot; {{ exercise.notes }}{% endif %}
+            </p>
+            <div class="grid grid-cols-4 gap-2">
+                <div>
+                    <label class="block text-[11px] text-slate-500 mb-1">Sets</label>
+                    <input type="number" name="ex_{{ exercise.id }}_sets" inputmode="numeric"
+                           class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-500 mb-1">Reps</label>
+                    <input type="number" name="ex_{{ exercise.id }}_reps" inputmode="numeric"
+                           class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-500 mb-1">Wt ({{ settings.weight_unit }})</label>
+                    <input type="number" step="0.1" name="ex_{{ exercise.id }}_weight" inputmode="decimal"
+                           class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+                </div>
+                <div>
+                    <label class="block text-[11px] text-slate-500 mb-1">Dist ({{ settings.distance_unit }})</label>
+                    <input type="number" step="0.1" name="ex_{{ exercise.id }}_distance" inputmode="decimal"
+                           class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
     {% endif %}
 
-    <div class="card glow-border rounded-2xl p-6">
-        <div class="flex items-center justify-between mb-4">
-            <h2 class="font-semibold text-accent2">Extra Exercises</h2>
+    <div class="card glow-border rounded-2xl p-4 md:p-6">
+        <div class="flex items-center justify-between mb-3">
+            <h2 class="font-semibold text-accent2 flex items-center gap-2">{{ icons.plus("w-4 h-4") }} Extra Exercises</h2>
             <button type="button" onclick="addExtraRow()"
-                    class="text-sm px-3 py-1.5 rounded-lg bg-accent2 text-white hover:shadow-glow transition">+ Add</button>
+                    class="tap text-sm px-3 py-2 rounded-lg bg-accent2 text-white hover:shadow-glow transition">+ Add</button>
         </div>
         <div id="extra-rows" class="space-y-3"></div>
     </div>
 
-    <button type="submit" class="w-full py-3 rounded-lg bg-accent text-bg font-bold text-lg hover:shadow-glow transition">
-        Save Workout
+    <button type="submit" class="tap pulse-cta w-full py-4 rounded-xl bg-gradient-to-r from-accent to-accent2 text-bg font-bold text-lg flex items-center justify-center gap-2">
+        {{ icons.check_circle("w-5 h-5") }} Save Workout
     </button>
 </form>
 
 <template id="extra-row-template">
-    <div class="grid md:grid-cols-6 gap-2 items-start text-sm extra-row">
-        <div class="md:col-span-2">
-            <input type="text" name="adhoc_name" placeholder="Exercise name"
+    <div class="card glow-border rounded-2xl p-4 extra-row">
+        <div class="mb-3">
+            <label class="block text-[11px] text-slate-500 mb-1">Exercise name</label>
+            <input type="text" name="adhoc_name" placeholder="e.g. Kettlebell Swing"
                    hx-get="{{ url_for('builder.suggest_exercise_name') }}"
                    hx-trigger="keyup changed delay:400ms"
                    hx-target="next .suggestion-slot"
                    hx-include="this"
-                   class="w-full rounded-lg bg-bg border border-slate-700 px-2 py-1.5">
+                   class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             <div class="suggestion-slot"></div>
         </div>
-        <input type="number" name="adhoc_sets" placeholder="Sets" class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5">
-        <input type="number" name="adhoc_reps" placeholder="Reps" class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5">
-        <input type="number" step="0.1" name="adhoc_weight" placeholder="Weight ({{ settings.weight_unit }})" class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5">
-        <input type="number" step="0.1" name="adhoc_distance" placeholder="Distance ({{ settings.distance_unit }})" class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5">
-        <button type="button" onclick="this.closest('.extra-row').remove()" class="text-red-400 hover:underline text-xs">Remove</button>
+        <div class="grid grid-cols-4 gap-2">
+            <input type="number" name="adhoc_sets" placeholder="Sets" inputmode="numeric" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+            <input type="number" name="adhoc_reps" placeholder="Reps" inputmode="numeric" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+            <input type="number" step="0.1" name="adhoc_weight" placeholder="Wt" inputmode="decimal" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+            <input type="number" step="0.1" name="adhoc_distance" placeholder="Dist" inputmode="decimal" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
+        </div>
+        <button type="button" onclick="this.closest('.extra-row').remove()" class="tap text-red-400 hover:underline text-xs mt-2">Remove</button>
     </div>
 </template>
 

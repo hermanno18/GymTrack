@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}Log Workout - GymTrack{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-6">Log a Workout</h1>
+{% import "_icons.html" as icons %}
+<h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.dumbbell("w-6 h-6 text-accent") }} Log a Workout</h1>
 
 {% for program in programs %}
 {% if program.days %}
@@ -10,7 +11,7 @@
     <div class="flex flex-wrap gap-2">
         {% for day in program.days %}
         <a href="{{ url_for('workouts.log_day', day_id=day.id) }}"
-           class="px-3 py-1.5 rounded-lg bg-bg border border-slate-700 hover:border-accent hover:text-accent transition text-sm">
+           class="tap px-4 py-2.5 rounded-lg bg-bg border border-slate-700 hover:border-accent hover:text-accent transition text-sm">
             {{ day.label }}
         </a>
         {% endfor %}
@@ -23,8 +24,8 @@
     <h2 class="font-semibold text-accent2 mb-2">Free-form Session</h2>
     <p class="text-sm text-slate-400 mb-4">Not following a specific day? Log whatever you did.</p>
     <a href="{{ url_for('workouts.log_adhoc') }}"
-       class="inline-block px-4 py-2 rounded-lg bg-accent2 text-white font-semibold hover:shadow-glow transition">
-        Log Free-form
+       class="tap inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-accent2 text-white font-semibold hover:shadow-glow transition">
+        {{ icons.plus("w-4 h-4") }} Log Free-form
     </a>
 </div>
 {% endblock %}

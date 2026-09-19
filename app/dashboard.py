@@ -20,6 +20,8 @@ def home():
         .limit(5)
         .all()
     )
+    total_workouts = WorkoutSession.query.filter_by(user_id=current_user.id).count()
     return render_template(
-        "dashboard.html", programs=programs, recent_sessions=recent_sessions
+        "dashboard.html", programs=programs, recent_sessions=recent_sessions,
+        total_workouts=total_workouts,
     )

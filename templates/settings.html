@@ -1,8 +1,9 @@
 {% extends "base.html" %}
 {% block title %}Settings - GymTrack{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <div class="max-w-md mx-auto card glow-border rounded-2xl p-8">
-    <h1 class="text-2xl font-bold mb-6 text-accent">Settings</h1>
+    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.settings("w-6 h-6 text-accent") }} Settings</h1>
     <form method="post" class="space-y-6">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         <div>
@@ -31,7 +32,7 @@
                 </label>
             </div>
         </div>
-        <button type="submit" class="w-full py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+        <button type="submit" class="tap w-full py-3 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
             Save Settings
         </button>
     </form>

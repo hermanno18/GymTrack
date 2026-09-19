@@ -1,10 +1,11 @@
 {% extends "base.html" %}
 {% block title %}Programs - GymTrack{% endblock %}
 {% block content %}
+{% import "_icons.html" as icons %}
 <div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold">Your Programs</h1>
+    <h1 class="text-2xl font-bold flex items-center gap-2">{{ icons.clipboard("w-6 h-6 text-accent") }} Your Programs</h1>
     <a href="{{ url_for('programs.new') }}"
-       class="px-4 py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">+ New Program</a>
+       class="tap px-4 py-2.5 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">+ New</a>
 </div>
 
 {% if programs %}
@@ -15,12 +16,12 @@
             <h2 class="font-semibold text-lg">{{ program.name }}</h2>
             <p class="text-xs text-slate-500 mt-1">{{ program.days|length }} day(s) &middot; created {{ program.created_at.strftime('%Y-%m-%d') }}</p>
         </div>
-        <div class="flex gap-3 mt-4 text-sm">
-            <a href="{{ url_for('builder.edit_program', program_id=program.id) }}" class="text-accent hover:underline">Edit</a>
+        <div class="flex gap-4 mt-4 text-sm items-center">
+            <a href="{{ url_for('builder.edit_program', program_id=program.id) }}" class="tap text-accent flex items-center gap-1">{{ icons.edit("w-4 h-4") }} Edit</a>
             <form method="post" action="{{ url_for('programs.delete', program_id=program.id) }}"
                   onsubmit="return confirm('Delete this program and all its exercises?');">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-                <button type="submit" class="text-red-400 hover:underline">Delete</button>
+                <button type="submit" class="tap text-red-400 flex items-center gap-1">{{ icons.trash("w-4 h-4") }} Delete</button>
             </form>
         </div>
     </div>

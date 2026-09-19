@@ -1,48 +1,61 @@
 {% extends "base.html" %}
 {% block title %}Dashboard - GymTrack{% endblock %}
 {% block content %}
-<div class="flex items-center justify-between mb-6">
-    <h1 class="text-2xl font-bold">Dashboard</h1>
-    <a href="{{ url_for('programs.new') }}"
-       class="px-4 py-2 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">+ New Program</a>
+{% import "_icons.html" as icons %}
+
+<div class="relative overflow-hidden rounded-2xl mb-6 p-6 md:p-8 card glow-border
+            bg-gradient-to-br from-cyan-500/10 via-purple-500/10 to-transparent">
+    <div class="flex items-center justify-between gap-4">
+        <div>
+            <p class="text-xs uppercase tracking-widest text-accent/80 mb-1">Let's move</p>
+            <h1 class="text-2xl md:text-3xl font-extrabold">Ready to train?</h1>
+        </div>
+        <div class="flex items-center gap-2 bg-bg/60 rounded-full px-4 py-2 border border-fire/30">
+            <span class="flame-icon text-fire">{{ icons.flame("w-5 h-5") }}</span>
+            <span class="font-bold text-lg">{{ total_workouts }}</span>
+            <span class="text-xs text-slate-400">workout{{ 's' if total_workouts != 1 else '' }} logged</span>
+        </div>
+    </div>
+    <a href="{{ url_for('workouts.log_picker') }}" class="tap mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl
+              bg-gradient-to-r from-accent to-accent2 text-bg font-bold pulse-cta">
+        {{ icons.dumbbell("w-5 h-5") }} Log a Workout
+    </a>
 </div>
 
-<div class="grid md:grid-cols-2 gap-6">
-    <div class="card glow-border rounded-2xl p-6">
-        <h2 class="text-lg font-semibold mb-4 text-accent">Your Programs</h2>
-        {% if programs %}
-        <ul class="space-y-2">
-            {% for program in programs %}
-            <li class="flex justify-between items-center bg-bg/50 rounded-lg px-3 py-2">
-                <a href="{{ url_for('builder.edit_program', program_id=program.id) }}"
-                   class="hover:text-accent transition">{{ program.name }}</a>
-                <span class="text-xs text-slate-500">{{ program.days|length }} day(s)</span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-slate-400 text-sm">No programs yet. Upload a PDF or start from scratch to get going.</p>
-        {% endif %}
-    </div>
+<div class="flex items-center justify-between mb-3">
+    <h2 class="text-lg font-semibold flex items-center gap-2">{{ icons.clipboard("w-5 h-5 text-accent") }} Your Programs</h2>
+    <a href="{{ url_for('programs.new') }}" class="text-sm text-accent hover:underline">+ New</a>
+</div>
 
-    <div class="card glow-border rounded-2xl p-6">
-        <h2 class="text-lg font-semibold mb-4 text-accent2">Recent Sessions</h2>
-        {% if recent_sessions %}
-        <ul class="space-y-2">
-            {% for session in recent_sessions %}
-            <li class="flex justify-between items-center bg-bg/50 rounded-lg px-3 py-2">
-                <span>{{ session.date }}</span>
-                <span class="text-xs text-slate-500">
-                    {{ session.program_day.label if session.program_day else "Ad-hoc" }}
-                </span>
-            </li>
-            {% endfor %}
-        </ul>
-        {% else %}
-        <p class="text-slate-400 text-sm">No workouts logged yet.</p>
-        {% endif %}
-        <a href="{{ url_for('workouts.log_picker') }}"
-           class="inline-block mt-4 text-sm text-accent2 hover:underline">Log a workout &rarr;</a>
-    </div>
+<div class="grid md:grid-cols-2 gap-4 mb-6">
+    {% if programs %}
+        {% for program in programs %}
+        <a href="{{ url_for('builder.edit_program', program_id=program.id) }}"
+           class="tap card glow-border rounded-2xl p-4 flex items-center justify-between hover:border-accent/60">
+            <span class="font-medium">{{ program.name }}</span>
+            <span class="text-xs text-slate-500">{{ program.days|length }} day(s)</span>
+        </a>
+        {% endfor %}
+    {% else %}
+        <p class="text-slate-400 text-sm col-span-2">No programs yet. Upload a PDF or start from scratch to get going.</p>
+    {% endif %}
+</div>
+
+<h2 class="text-lg font-semibold flex items-center gap-2 mb-3">{{ icons.calendar("w-5 h-5 text-accent2") }} Recent Sessions</h2>
+<div class="card glow-border rounded-2xl p-4">
+    {% if recent_sessions %}
+    <ul class="divide-y divide-slate-800">
+        {% for session in recent_sessions %}
+        <li class="flex justify-between items-center py-2.5">
+            <span>{{ session.date }}</span>
+            <span class="text-xs text-slate-500">
+                {{ session.program_day.label if session.program_day else "Ad-hoc" }}
+            </span>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <p class="text-slate-400 text-sm">No workouts logged yet -- tap "Log a Workout" above to start your streak.</p>
+    {% endif %}
 </div>
 {% endblock %}

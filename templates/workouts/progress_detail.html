@@ -1,7 +1,8 @@
 {% extends "base.html" %}
 {% block title %}{{ display_name }} Progress - GymTrack{% endblock %}
 {% block content %}
-<h1 class="text-2xl font-bold mb-2">{{ display_name }}</h1>
+{% import "_icons.html" as icons %}
+<h1 class="text-2xl font-bold mb-2 flex items-center gap-2">{{ icons.chart("w-6 h-6 text-accent") }} {{ display_name }}</h1>
 <p class="text-sm text-slate-400 mb-6">Tracking: {{ metric }}</p>
 
 <div class="card glow-border rounded-2xl p-6 mb-6">
