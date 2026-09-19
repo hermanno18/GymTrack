@@ -22,6 +22,14 @@
                 <label class="block text-xs text-slate-400 mb-1">Notes (optional)</label>
                 <input type="text" name="session_notes" class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">Start time (optional)</label>
+                <input type="time" name="start_time" class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
+            </div>
+            <div>
+                <label class="block text-xs text-slate-400 mb-1">End time (optional)</label>
+                <input type="time" name="end_time" class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
+            </div>
         </div>
     </div>
 
@@ -57,6 +65,11 @@
                     <input type="number" step="0.1" name="ex_{{ exercise.id }}_distance" inputmode="decimal"
                            class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
                 </div>
+            </div>
+            <div class="mt-2">
+                <label class="block text-[11px] text-slate-500 mb-1">Time (mm:ss, for timed/cardio exercises)</label>
+                <input type="text" name="ex_{{ exercise.id }}_duration" placeholder="e.g. 24:30" pattern="\d{1,2}:\d{2}(:\d{2})?"
+                       class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             </div>
         </div>
         {% endfor %}
@@ -95,6 +108,8 @@
             <input type="number" step="0.1" name="adhoc_weight" placeholder="Wt" inputmode="decimal" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
             <input type="number" step="0.1" name="adhoc_distance" placeholder="Dist" inputmode="decimal" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
         </div>
+        <input type="text" name="adhoc_duration" placeholder="Time mm:ss (optional)" pattern="\d{1,2}:\d{2}(:\d{2})?"
+               class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5 mt-2">
         <button type="button" onclick="this.closest('.extra-row').remove()" class="tap text-red-400 hover:underline text-xs mt-2">Remove</button>
     </div>
 </template>

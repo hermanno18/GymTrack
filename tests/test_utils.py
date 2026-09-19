@@ -2,6 +2,7 @@
 from app.utils import (
     normalize_name, kg_to_display, display_to_kg,
     km_to_display, display_to_km, find_similar_exercise,
+    parse_duration_to_seconds, format_seconds_to_duration,
 )
 
 
@@ -70,3 +71,39 @@ def test_find_similar_exercise_no_match_below_threshold():
 
 def test_find_similar_exercise_empty_existing_list():
     assert find_similar_exercise("Squat", [], threshold=0.85) is None
+
+
+def test_parse_duration_mmss():
+    assert parse_duration_to_seconds("24:30") == 24 * 60 + 30
+
+
+def test_parse_duration_hhmmss():
+    assert parse_duration_to_seconds("1:05:00") == 3600 + 5 * 60
+
+
+def test_parse_duration_blank_returns_none():
+    assert parse_duration_to_seconds("") is None
+    assert parse_duration_to_seconds(None) is None
+
+
+def test_parse_duration_rejects_garbage():
+    import pytest
+    with pytest.raises(ValueError):
+        parse_duration_to_seconds("not a time")
+
+
+def test_format_seconds_to_duration_under_an_hour():
+    assert format_seconds_to_duration(1470) == "24:30"
+
+
+def test_format_seconds_to_duration_over_an_hour():
+    assert format_seconds_to_duration(3900) == "1:05:00"
+
+
+def test_format_seconds_to_duration_none():
+    assert format_seconds_to_duration(None) is None
+
+
+def test_duration_round_trip():
+    seconds = parse_duration_to_seconds("5:09")
+    assert format_seconds_to_duration(seconds) == "5:09"

@@ -7,10 +7,13 @@
 <div class="space-y-4">
     {% for session in sessions %}
     <div class="card glow-border rounded-2xl p-5">
-        <div class="flex justify-between items-center mb-2">
+        <div class="flex justify-between items-center mb-1">
             <span class="font-semibold">{{ session.date }}</span>
             <span class="text-xs text-slate-500">{{ session.program_day.label if session.program_day else "Ad-hoc" }}</span>
         </div>
+        {% if session.start_time or session.end_time %}
+        <p class="text-xs text-slate-500 mb-2">{{ session.start_time or '?' }} &ndash; {{ session.end_time or '?' }}</p>
+        {% endif %}
         {% if session.notes %}<p class="text-sm text-slate-400 mb-2">{{ session.notes }}</p>{% endif %}
         <ul class="text-sm space-y-1">
             {% for log in session.logs %}
@@ -20,6 +23,7 @@
                     {% if log.actual_sets or log.actual_reps %}{{ log.actual_sets or '-' }}x{{ log.actual_reps or '-' }}{% endif %}
                     {% if log.actual_weight_kg %} @ {{ log.actual_weight_kg | display_weight(settings.weight_unit) }}{{ settings.weight_unit }}{% endif %}
                     {% if log.actual_distance_km %} {{ log.actual_distance_km | display_distance(settings.distance_unit) }}{{ settings.distance_unit }}{% endif %}
+                    {% if log.actual_duration_seconds %} {{ log.actual_duration_seconds | display_duration }}{% endif %}
                 </span>
             </li>
             {% endfor %}

@@ -107,3 +107,70 @@ def test_weight_unit_conversion_in_logging(client, app):
     with app.app_context():
         log = WorkoutLog.query.first()
         assert round(log.actual_weight_kg, 2) == round(100 * 0.45359237, 2)
+
+
+def test_session_start_and_end_time_are_saved(client, app):
+    _register(client)
+    resp = client.post("/workouts/log/adhoc", data={
+        "date": "2026-01-20", "start_time": "18:00", "end_time": "19:15",
+        "adhoc_name": "Row", "adhoc_duration": "20:00",
+    }, follow_redirects=True)
+    assert b"Workout logged" in resp.data
+    with app.app_context():
+        session = WorkoutSession.query.filter_by(user_id=1).first()
+        assert session.start_time == "18:00"
+        assert session.end_time == "19:15"
+
+
+def test_planned_exercise_duration_is_logged(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program E", "Day 1", "Run")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-01-21", f"ex_{ex_id}_duration": "24:30",
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.actual_duration_seconds == 24 * 60 + 30
+
+
+def test_duration_only_entry_is_not_skipped(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program F", "Day 1", "Row")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-01-22", f"ex_{ex_id}_duration": "5:00",
+    })
+    with app.app_context():
+        session = WorkoutSession.query.filter_by(program_day_id=day_id).first()
+        assert WorkoutLog.query.filter_by(session_id=session.id).count() == 1
+
+
+def test_adhoc_duration_is_logged(client, app):
+    _register(client)
+    client.post("/workouts/log/adhoc", data={
+        "date": "2026-01-23", "adhoc_name": "Row 500m", "adhoc_duration": "1:45",
+    })
+    with app.app_context():
+        exercise = Exercise.query.filter_by(name_normalized="row 500m").first()
+        log = WorkoutLog.query.filter_by(exercise_id=exercise.id).first()
+        assert log.actual_duration_seconds == 105
+
+
+def test_invalid_duration_format_is_ignored_not_crashed(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program G", "Day 1", "Run")
+    resp = client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-01-24", f"ex_{ex_id}_sets": "1", f"ex_{ex_id}_duration": "garbage",
+    }, follow_redirects=True)
+    assert resp.status_code == 200
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.actual_duration_seconds is None
+
+
+def test_duration_becomes_progress_metric_when_no_weight_or_distance(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program H", "Day 1", "Plank")
+    client.post(f"/workouts/log/{day_id}", data={"date": "2026-01-25", f"ex_{ex_id}_duration": "1:30"})
+    resp = client.get("/workouts/progress/plank")
+    assert resp.status_code == 200
+    assert b'"value": 90' in resp.data

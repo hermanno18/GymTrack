@@ -47,6 +47,12 @@
                        value="{{ (exercise.target_distance_km | display_distance(settings.distance_unit)) if exercise.target_distance_km is not none else '' }}"
                        class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2">
             </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Target Time (mm:ss)</label>
+                <input type="text" name="duration" placeholder="e.g. 24:30" pattern="\d{1,2}:\d{2}(:\d{2})?"
+                       value="{{ duration_display or '' }}"
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2">
+            </div>
         </div>
         <div>
             <label class="block text-sm text-slate-400 mb-1">Notes</label>

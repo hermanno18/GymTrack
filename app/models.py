@@ -81,6 +81,7 @@ class Exercise(db.Model):
     target_reps = db.Column(db.Integer, nullable=True)
     target_weight_kg = db.Column(db.Float, nullable=True)
     target_distance_km = db.Column(db.Float, nullable=True)
+    target_duration_seconds = db.Column(db.Integer, nullable=True)
     order_index = db.Column(db.Integer, default=0)
     notes = db.Column(db.String(500), nullable=True)
 
@@ -92,6 +93,8 @@ class WorkoutSession(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     program_day_id = db.Column(db.Integer, db.ForeignKey("program_day.id"), nullable=True)
     date = db.Column(db.Date, default=date.today)
+    start_time = db.Column(db.String(5), nullable=True)  # "HH:MM", 24h
+    end_time = db.Column(db.String(5), nullable=True)    # "HH:MM", 24h
     notes = db.Column(db.String(500), nullable=True)
 
     program_day = db.relationship("ProgramDay")
@@ -106,4 +109,5 @@ class WorkoutLog(db.Model):
     actual_reps = db.Column(db.Integer, nullable=True)
     actual_weight_kg = db.Column(db.Float, nullable=True)
     actual_distance_km = db.Column(db.Float, nullable=True)
+    actual_duration_seconds = db.Column(db.Integer, nullable=True)
     notes = db.Column(db.String(500), nullable=True)

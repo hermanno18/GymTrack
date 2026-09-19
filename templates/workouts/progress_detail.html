@@ -21,6 +21,7 @@
                 <th>Reps</th>
                 <th>Weight ({{ settings.weight_unit }})</th>
                 <th>Distance ({{ settings.distance_unit }})</th>
+                <th>Time</th>
             </tr>
         </thead>
         <tbody>
@@ -31,6 +32,7 @@
                 <td>{{ log.actual_reps or '-' }}</td>
                 <td>{{ (log.actual_weight_kg | display_weight(settings.weight_unit)) if log.actual_weight_kg is not none else '-' }}</td>
                 <td>{{ (log.actual_distance_km | display_distance(settings.distance_unit)) if log.actual_distance_km is not none else '-' }}</td>
+                <td>{{ (log.actual_duration_seconds | display_duration) if log.actual_duration_seconds is not none else '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -39,13 +41,22 @@
 
 <script>
     const chartPoints = {{ chart_points | tojson }};
+    const metric = {{ metric | tojson }};
     const ctx = document.getElementById('progressChart');
+
+    function formatSeconds(totalSeconds) {
+        const s = Math.round(totalSeconds);
+        const m = Math.floor(s / 60);
+        const sec = s % 60;
+        return m + ':' + String(sec).padStart(2, '0');
+    }
+
     new Chart(ctx, {
         type: 'line',
         data: {
             labels: chartPoints.map(p => p.date),
             datasets: [{
-                label: '{{ metric }}',
+                label: metric,
                 data: chartPoints.map(p => p.value),
                 borderColor: '#22d3ee',
                 backgroundColor: 'rgba(34, 211, 238, 0.15)',
@@ -59,9 +70,24 @@
             maintainAspectRatio: false,
             scales: {
                 x: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } },
-                y: { ticks: { color: '#94a3b8' }, grid: { color: 'rgba(148,163,184,0.1)' } }
+                y: {
+                    ticks: {
+                        color: '#94a3b8',
+                        callback: metric === 'duration' ? (value) => formatSeconds(value) : undefined,
+                    },
+                    grid: { color: 'rgba(148,163,184,0.1)' }
+                }
             },
-            plugins: { legend: { labels: { color: '#e2e8f0' } } }
+            plugins: {
+                legend: { labels: { color: '#e2e8f0' } },
+                tooltip: {
+                    callbacks: {
+                        label: metric === 'duration'
+                            ? (item) => formatSeconds(item.parsed.y)
+                            : undefined,
+                    },
+                },
+            },
         }
     });
 </script>

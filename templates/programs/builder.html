@@ -35,6 +35,9 @@
                     {% if exercise.target_distance_km is not none %}
                     <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-300">{{ exercise.target_distance_km | display_distance(settings.distance_unit) }} {{ settings.distance_unit }}</span>
                     {% endif %}
+                    {% if exercise.target_duration_seconds is not none %}
+                    <span class="px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-300">{{ exercise.target_duration_seconds | display_duration }}</span>
+                    {% endif %}
                     {% if exercise.notes %}
                     <span class="px-2 py-0.5 rounded-full bg-slate-700/40 text-slate-300">{{ exercise.notes }}</span>
                     {% endif %}
@@ -83,6 +86,11 @@
         <div>
             <label class="block text-[11px] text-slate-500 mb-1">Distance ({{ settings.distance_unit }})</label>
             <input type="number" step="0.1" name="distance" class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
+        </div>
+        <div>
+            <label class="block text-[11px] text-slate-500 mb-1">Time (mm:ss)</label>
+            <input type="text" name="duration" placeholder="e.g. 24:30" pattern="\d{1,2}:\d{2}(:\d{2})?"
+                   class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
         </div>
         <button type="submit" class="tap col-span-2 md:col-span-6 rounded-lg bg-accent text-bg font-semibold py-2.5 hover:shadow-glow transition flex items-center justify-center gap-1.5">
             {{ icons.plus("w-4 h-4") }} Add Exercise

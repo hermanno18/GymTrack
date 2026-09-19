@@ -67,3 +67,36 @@ def find_similar_exercise(name, existing, threshold=0.85):
             best = {"id": ex_id, "name": ex_name, "ratio": round(ratio, 2), "exact": False}
 
     return best if best and best_ratio >= threshold else None
+
+
+DURATION_RE = re.compile(r"^\d{1,2}:\d{2}(:\d{2})?$")
+
+
+def parse_duration_to_seconds(text):
+    """
+    Parses 'mm:ss' or 'hh:mm:ss' into total seconds. Returns None for
+    blank input. Used for how long a run/row/timed exercise actually took.
+    """
+    if text in (None, ""):
+        return None
+    text = text.strip()
+    if not DURATION_RE.match(text):
+        raise ValueError(f"Unrecognized duration format: {text!r}")
+    parts = text.split(":")
+    if len(parts) == 2:
+        minutes, seconds = parts
+        return int(minutes) * 60 + int(seconds)
+    hours, minutes, seconds = parts
+    return int(hours) * 3600 + int(minutes) * 60 + int(seconds)
+
+
+def format_seconds_to_duration(total_seconds):
+    """Formats total seconds back into 'mm:ss' (or 'h:mm:ss' if >= 1 hour)."""
+    if total_seconds is None:
+        return None
+    total_seconds = int(total_seconds)
+    hours, remainder = divmod(total_seconds, 3600)
+    minutes, seconds = divmod(remainder, 60)
+    if hours:
+        return f"{hours}:{minutes:02d}:{seconds:02d}"
+    return f"{minutes}:{seconds:02d}"

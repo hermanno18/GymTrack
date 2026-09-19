@@ -16,7 +16,10 @@ from flask_login import login_required, current_user
 
 from . import db
 from .models import Program, ProgramDay, Exercise, WorkoutSession, WorkoutLog
-from .utils import normalize_name, display_to_kg, display_to_km, kg_to_display, km_to_display
+from .utils import (
+    normalize_name, display_to_kg, display_to_km, kg_to_display, km_to_display,
+    parse_duration_to_seconds,
+)
 
 workouts_bp = Blueprint("workouts", __name__, url_prefix="/workouts")
 
@@ -68,6 +71,8 @@ def _save_session(day):
         user_id=current_user.id,
         program_day_id=day.id if day else None,
         date=date_cls.fromisoformat(session_date),
+        start_time=request.form.get("start_time") or None,
+        end_time=request.form.get("end_time") or None,
         notes=request.form.get("session_notes", "").strip() or None,
     )
     db.session.add(workout_session)
@@ -89,8 +94,9 @@ def _log_planned_exercise(workout_session, exercise, unit_settings):
     reps = _to_int(request.form.get(f"{prefix}_reps"))
     weight = request.form.get(f"{prefix}_weight")
     distance = request.form.get(f"{prefix}_distance")
+    duration = _to_duration(request.form.get(f"{prefix}_duration"))
 
-    if not any([sets, reps, weight, distance]):
+    if not any([sets, reps, weight, distance, duration]):
         return  # skipped this exercise today, nothing to log
 
     db.session.add(WorkoutLog(
@@ -100,6 +106,7 @@ def _log_planned_exercise(workout_session, exercise, unit_settings):
         actual_reps=reps,
         actual_weight_kg=display_to_kg(weight, unit_settings.weight_unit),
         actual_distance_km=display_to_km(distance, unit_settings.distance_unit),
+        actual_duration_seconds=duration,
     ))
 
 
@@ -109,6 +116,7 @@ def _log_extra_exercises(workout_session, unit_settings):
     reps_list = request.form.getlist("adhoc_reps")
     weight_list = request.form.getlist("adhoc_weight")
     distance_list = request.form.getlist("adhoc_distance")
+    duration_list = request.form.getlist("adhoc_duration")
 
     for i, name in enumerate(names):
         name = name.strip()
@@ -122,6 +130,7 @@ def _log_extra_exercises(workout_session, unit_settings):
             actual_reps=_to_int(_at(reps_list, i)),
             actual_weight_kg=display_to_kg(_at(weight_list, i), unit_settings.weight_unit),
             actual_distance_km=display_to_km(_at(distance_list, i), unit_settings.distance_unit),
+            actual_duration_seconds=_to_duration(_at(duration_list, i)),
         ))
 
 
@@ -210,7 +219,15 @@ def progress_detail(name_normalized):
     display_name = db.session.get(Exercise, exercise_ids[0]).name
     has_weight = any(log.actual_weight_kg is not None for log in logs)
     has_distance = any(log.actual_distance_km is not None for log in logs)
-    metric = "weight" if has_weight else ("distance" if has_distance else "reps")
+    has_duration = any(log.actual_duration_seconds is not None for log in logs)
+    if has_weight:
+        metric = "weight"
+    elif has_distance:
+        metric = "distance"
+    elif has_duration:
+        metric = "duration"
+    else:
+        metric = "reps"
 
     chart_points = []
     for log in logs:
@@ -219,6 +236,8 @@ def progress_detail(name_normalized):
             value = kg_to_display(log.actual_weight_kg, unit_settings.weight_unit)
         elif metric == "distance":
             value = km_to_display(log.actual_distance_km, unit_settings.distance_unit)
+        elif metric == "duration":
+            value = log.actual_duration_seconds
         else:
             value = log.actual_reps
         if value is not None:
@@ -238,6 +257,13 @@ def _to_int(value):
     try:
         return int(value)
     except (TypeError, ValueError):
+        return None
+
+
+def _to_duration(value):
+    try:
+        return parse_duration_to_seconds(value)
+    except ValueError:
         return None
 
 

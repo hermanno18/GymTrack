@@ -51,6 +51,7 @@ def create_app(test_config=None):
 
     with app.app_context():
         db.create_all()
+        _ensure_schema_migrations()
 
     _register_blueprints(app)
     _register_user_loader()
@@ -79,7 +80,34 @@ def _register_user_loader():
 
 
 def _register_template_filters(app):
-    from .utils import kg_to_display, km_to_display
+    from .utils import kg_to_display, km_to_display, format_seconds_to_duration
 
     app.jinja_env.filters["display_weight"] = kg_to_display
     app.jinja_env.filters["display_distance"] = km_to_display
+    app.jinja_env.filters["display_duration"] = format_seconds_to_duration
+
+
+def _ensure_schema_migrations():
+    """
+    Tiny ad-hoc migration safety net for SQLite.
+
+    db.create_all() only creates missing *tables*, it never alters
+    existing ones -- so a column added to a model after someone already
+    has a local gymtrack.db would otherwise cause 'no such column'
+    errors. This is deliberately lightweight (no Alembic) since the app
+    is small and single-database; add real migrations if that changes.
+    """
+    from sqlalchemy import text
+
+    columns_to_ensure = [
+        ("exercise", "target_duration_seconds", "INTEGER"),
+        ("workout_log", "actual_duration_seconds", "INTEGER"),
+        ("workout_session", "start_time", "VARCHAR(5)"),
+        ("workout_session", "end_time", "VARCHAR(5)"),
+    ]
+    with db.engine.connect() as conn:
+        for table, column, col_type in columns_to_ensure:
+            existing = [row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))]
+            if existing and column not in existing:
+                conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {col_type}"))
+                conn.commit()

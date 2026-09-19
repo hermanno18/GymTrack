@@ -15,7 +15,10 @@ from flask_login import login_required, current_user
 
 from . import db
 from .models import Program, ProgramDay, Exercise
-from .utils import normalize_name, find_similar_exercise, display_to_kg, display_to_km
+from .utils import (
+    normalize_name, find_similar_exercise, display_to_kg, display_to_km,
+    parse_duration_to_seconds, format_seconds_to_duration,
+)
 
 builder_bp = Blueprint("builder", __name__)
 
@@ -87,6 +90,7 @@ def add_exercise(day_id):
         target_reps=_to_int(request.form.get("reps")),
         target_weight_kg=display_to_kg(request.form.get("weight"), unit_settings.weight_unit),
         target_distance_km=display_to_km(request.form.get("distance"), unit_settings.distance_unit),
+        target_duration_seconds=_to_duration(request.form.get("duration")),
         order_index=next_order,
         notes=request.form.get("notes", "").strip() or None,
     ))
@@ -122,13 +126,15 @@ def edit_exercise(exercise_id):
         exercise.target_reps = _to_int(request.form.get("reps"))
         exercise.target_weight_kg = display_to_kg(request.form.get("weight"), unit_settings.weight_unit)
         exercise.target_distance_km = display_to_km(request.form.get("distance"), unit_settings.distance_unit)
+        exercise.target_duration_seconds = _to_duration(request.form.get("duration"))
         exercise.notes = request.form.get("notes", "").strip() or None
         db.session.commit()
         flash("Exercise updated.", "success")
         return redirect(url_for("builder.edit_program", program_id=exercise.program_day.program_id))
 
     return render_template(
-        "programs/edit_exercise.html", exercise=exercise, settings=unit_settings
+        "programs/edit_exercise.html", exercise=exercise, settings=unit_settings,
+        duration_display=format_seconds_to_duration(exercise.target_duration_seconds),
     )
 
 
@@ -165,4 +171,11 @@ def _to_int(value):
     try:
         return int(value)
     except (TypeError, ValueError):
+        return None
+
+
+def _to_duration(value):
+    try:
+        return parse_duration_to_seconds(value)
+    except ValueError:
         return None
