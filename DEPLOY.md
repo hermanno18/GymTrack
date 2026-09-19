@@ -15,11 +15,18 @@ no ASGI server, no extra bridge needed.
 7. Click **Create**.
 
 ## 2. Get the code onto the server
-Either:
+**Important: all active development currently lives on the `dev` branch --
+`main` doesn't exist on GitHub yet.** Point cPanel at `dev` for now, or
+create/merge into `main` yourself first if you'd rather keep a clean
+prod-only branch (`git checkout -b main && git push origin main` from
+`dev`, then repoint cPanel at `main` later). Either way:
+
 - Use cPanel's **Git Version Control** feature to pull directly from
-  `https://github.com/hermanno18/GymTrack.git` (point it at the `main`
-  branch), or
-- Upload the repo contents via File Manager / SFTP into the application root.
+  `https://github.com/hermanno18/GymTrack.git`, branch **`dev`** (or
+  `main`, once you've created it), or
+- Upload the repo contents via File Manager / SFTP into the application root
+  (make sure `static/images/*.jpg` come along too -- they're tracked in git
+  like any other file, no special step needed either way).
 
 ## 3. Install dependencies
 cPanel's Python App page gives you a command like:
@@ -47,5 +54,10 @@ Back on the Setup Python App page, click **Restart**. Visit your subdomain.
 - The SQLite DB and any uploaded PDFs live under `instance/`, which sits
   outside any statically-served directory by default -- don't move it
   into a public `htdocs`/`public_html` path.
+- Passenger routes every request (including `/static/...`) through the
+  Flask app itself -- there's no separate Apache static-file alias to
+  configure. This is fine at this app's scale (a handful of users); if
+  it ever needs to serve heavier traffic, point Apache/LiteSpeed at
+  `static/` directly instead for better performance.
 - If cPanel's Python App version changes later, re-run `pip install -r
   requirements.txt` after switching.
