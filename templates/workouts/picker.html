@@ -8,20 +8,21 @@
 {% if program.days %}
 <div class="card glow-border rounded-2xl p-6 mb-4">
     <h2 class="font-semibold text-accent mb-3">{{ program.name }}</h2>
-    <div class="space-y-2">
+    <div class="space-y-1.5">
         {% for day in program.days %}
-        <div class="flex items-center justify-between gap-2 bg-bg/40 rounded-xl px-3 py-2">
-            <span class="text-sm font-medium">{{ day.label }}</span>
-            <div class="flex gap-2">
-                <a href="{{ url_for('guided.session_start', day_id=day.id) }}"
-                   class="tap pulse-cta px-3 py-2 rounded-lg bg-gradient-to-r from-accent to-accent2 text-bg text-xs font-bold flex items-center gap-1">
-                    {{ icons.play("w-3.5 h-3.5") }} Start Guided
-                </a>
-                <a href="{{ url_for('workouts.log_day', day_id=day.id) }}"
-                   class="tap px-3 py-2 rounded-lg bg-bg border border-slate-700 hover:border-accent hover:text-accent transition text-xs">
-                    Quick Log
-                </a>
-            </div>
+        <div class="flex items-center gap-2">
+            <a href="{{ url_for('guided.session_start', day_id=day.id) }}"
+               class="tap flex-1 min-w-0 flex items-center gap-3 bg-bg/40 hover:bg-bg/70 rounded-xl px-3 py-2.5 transition">
+                <span class="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent2 text-bg flex items-center justify-center shrink-0">
+                    {{ icons.play("w-3.5 h-3.5") }}
+                </span>
+                <span class="text-sm font-medium truncate">{{ day.label }}</span>
+            </a>
+            <a href="{{ url_for('workouts.log_day', day_id=day.id) }}"
+               class="tap shrink-0 p-2.5 rounded-lg text-slate-500 hover:text-accent hover:bg-bg/40 transition"
+               aria-label="Manually log {{ day.label }}" title="Quick manual log">
+                {{ icons.edit("w-4 h-4") }}
+            </a>
         </div>
         {% endfor %}
     </div>

@@ -13,9 +13,10 @@
 
     <!-- WORK / REST screen -->
     <div id="active-screen" class="card glow-border rounded-2xl p-6 text-center">
-        <p id="phase-label" class="text-xs uppercase tracking-widest font-semibold mb-1 flex items-center justify-center gap-1.5"></p>
+        <p id="phase-label" class="text-xs uppercase tracking-widest font-semibold mb-1"></p>
         <h2 id="exercise-name" class="text-2xl font-bold mb-1"></h2>
-        <p id="exercise-target" class="text-sm text-slate-400 mb-6"></p>
+        <p id="exercise-target" class="text-sm text-slate-400 mb-1"></p>
+        <p id="set-label" class="text-xs text-accent2 font-semibold mb-4"></p>
 
         <div id="timer-ring" class="mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 transition-colors duration-500">
             <span id="timer-display" class="text-4xl font-mono font-bold tabular-nums">0:00</span>
@@ -23,7 +24,7 @@
 
         <div id="quick-entry" class="grid grid-cols-2 gap-2 mb-6 text-sm">
             <div>
-                <label class="block text-[11px] text-slate-500 mb-1">Sets</label>
+                <label class="block text-[11px] text-slate-500 mb-1">Sets done</label>
                 <input type="number" id="entry-sets" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
             </div>
             <div>
@@ -40,8 +41,28 @@
             </div>
         </div>
 
-        <button id="phase-button" type="button"
-                class="tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2"></button>
+        <!-- Shown while actively working a set: rest, or jump straight to the next exercise. -->
+        <div id="work-buttons">
+            <button id="rest-button" type="button"
+                    class="tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-accent to-accent2 text-bg">
+                {{ icons.coffee("w-5 h-5") }} Rest
+            </button>
+            <button id="skip-to-next-button" type="button" class="tap w-full mt-2 py-2 text-sm text-slate-500 hover:text-accent transition">
+                Skip rest &rarr; next exercise
+            </button>
+        </div>
+
+        <!-- Shown while resting: explicit choice, no more silent auto-advance. -->
+        <div id="rest-buttons" class="hidden grid grid-cols-2 gap-3">
+            <button id="next-set-button" type="button"
+                    class="tap w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1.5 bg-bg border-2 border-accent text-accent">
+                {{ icons.dumbbell("w-4 h-4") }} Next Set
+            </button>
+            <button id="next-exercise-button" type="button"
+                    class="tap w-full py-4 rounded-xl font-bold flex items-center justify-center gap-1.5 bg-gradient-to-r from-fire to-accent2 text-bg">
+                <span id="next-exercise-label">Next Exercise</span>
+            </button>
+        </div>
     </div>
 
     <!-- SUMMARY / FINISH screen -->
@@ -67,10 +88,11 @@
     let phase = 'work';           // 'work' | 'rest' | 'summary'
     let phaseStartedAt = Date.now();
     let exerciseStartedAtClock = null;
-    let pending = null;           // in-progress result for the current exercise
+    let currentSet = 1;
+    let accumulatedWork = 0;      // seconds across completed sets of THIS exercise
+    let accumulatedRest = 0;      // seconds across completed rests of THIS exercise
     const results = [];
     const sessionStartClock = formatHM(new Date());
-    let tickHandle = null;
 
     function pad(n) { return String(n).padStart(2, '0'); }
     function formatHM(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
@@ -80,17 +102,23 @@
         const s = totalSeconds % 60;
         return m + ':' + pad(s);
     }
+    function elapsedSincePhaseStart() {
+        return Math.round((Date.now() - phaseStartedAt) / 1000);
+    }
 
     const timerDisplay = document.getElementById('timer-display');
     const timerRing = document.getElementById('timer-ring');
     const phaseLabel = document.getElementById('phase-label');
     const exerciseName = document.getElementById('exercise-name');
     const exerciseTarget = document.getElementById('exercise-target');
-    const phaseButton = document.getElementById('phase-button');
+    const setLabel = document.getElementById('set-label');
     const progressLabel = document.getElementById('progress-label');
     const progressDots = document.getElementById('progress-dots');
     const activeScreen = document.getElementById('active-screen');
     const summaryScreen = document.getElementById('summary-screen');
+    const workButtons = document.getElementById('work-buttons');
+    const restButtons = document.getElementById('rest-buttons');
+    const nextExerciseLabel = document.getElementById('next-exercise-label');
     const entrySets = document.getElementById('entry-sets');
     const entryReps = document.getElementById('entry-reps');
     const entryWeight = document.getElementById('entry-weight');
@@ -116,35 +144,53 @@
         return parts.length ? 'Target: ' + parts.join(' \u00b7 ') : 'No specific target -- just go!';
     }
 
-    function startWorkPhase() {
+    function renderSetLabel() {
+        const ex = exercises[index];
+        setLabel.textContent = ex.target_sets ? ('Set ' + currentSet + ' of ' + ex.target_sets) : ('Set ' + currentSet);
+    }
+
+    // isNewExercise=true resets per-exercise counters; false means "another
+    // set of the SAME exercise" (the actual bug fix: resting no longer
+    // forces you onto the next exercise).
+    function startWorkPhase(isNewExercise) {
         phase = 'work';
         const ex = exercises[index];
         phaseStartedAt = Date.now();
-        exerciseStartedAtClock = formatClock(new Date());
-        entrySets.value = ex.target_sets || '';
-        entryReps.value = ex.target_reps || '';
-        entryWeight.value = ex.target_weight_display != null ? ex.target_weight_display : '';
-        entryDistance.value = ex.target_distance_display != null ? ex.target_distance_display : '';
+
+        if (isNewExercise) {
+            currentSet = 1;
+            accumulatedWork = 0;
+            accumulatedRest = 0;
+            exerciseStartedAtClock = formatClock(new Date());
+            entrySets.value = ex.target_sets || '';
+            entryReps.value = ex.target_reps || '';
+            entryWeight.value = ex.target_weight_display != null ? ex.target_weight_display : '';
+            entryDistance.value = ex.target_distance_display != null ? ex.target_distance_display : '';
+        } else {
+            currentSet += 1;
+        }
 
         exerciseName.textContent = ex.name;
         exerciseTarget.textContent = targetSummary(ex);
+        renderSetLabel();
         phaseLabel.textContent = 'WORKING';
         phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-accent';
         timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-accent shadow-glow transition-colors duration-500';
-        phaseButton.textContent = "Done \u2192 Rest";
-        phaseButton.className = 'tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-accent to-accent2 text-bg';
+        workButtons.classList.remove('hidden');
+        restButtons.classList.add('hidden');
+        const isLast = index === exercises.length - 1;
+        document.getElementById('skip-to-next-button').textContent =
+            isLast ? 'Skip rest \u2192 finish workout' : 'Skip rest \u2192 next exercise';
         renderDots();
     }
 
     function startRestPhase() {
-        const ex = exercises[index];
-        pending = {
-            exercise_id: ex.id,
-            started_at: exerciseStartedAtClock,
-            work_seconds: Math.round((Date.now() - phaseStartedAt) / 1000),
-            sets: entrySets.value, reps: entryReps.value,
-            weight: entryWeight.value, distance: entryDistance.value,
-        };
+        // Finishing a set's work: bank the elapsed time and bump the
+        // "sets done" quick-entry field to match, then wait for the user
+        // to explicitly choose what happens next.
+        accumulatedWork += elapsedSincePhaseStart();
+        entrySets.value = currentSet;
+
         phase = 'rest';
         phaseStartedAt = Date.now();
         const isLast = index === exercises.length - 1;
@@ -152,18 +198,38 @@
         phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-fire';
         timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-fire transition-colors duration-500';
         exerciseName.textContent = 'Take a breather';
-        exerciseTarget.textContent = isLast ? "Last one done -- rest up, then finish!" : ('Next up: ' + exercises[index + 1].name);
-        phaseButton.textContent = isLast ? 'Finish Workout' : 'Continue \u2192 Next Exercise';
-        phaseButton.className = 'tap pulse-cta w-full py-4 rounded-xl font-bold text-lg flex items-center justify-center gap-2 bg-gradient-to-r from-fire to-accent2 text-bg';
+        exerciseTarget.textContent = 'Ready when you are -- no rush.';
+        renderSetLabel();
+        nextExerciseLabel.textContent = isLast ? 'Finish Workout' : 'Next Exercise';
+        workButtons.classList.add('hidden');
+        restButtons.classList.remove('hidden');
     }
 
-    function finishRestAndAdvance() {
-        pending.rest_seconds = Math.round((Date.now() - phaseStartedAt) / 1000);
-        results.push(pending);
-        pending = null;
+    function goToNextSet() {
+        accumulatedRest += elapsedSincePhaseStart();
+        startWorkPhase(false);
+    }
+
+    function finishExerciseAndAdvance() {
+        // Bank whatever interval is currently running, whichever phase
+        // we're in (rest, or work if the user skipped resting entirely).
+        if (phase === 'rest') accumulatedRest += elapsedSincePhaseStart();
+        else accumulatedWork += elapsedSincePhaseStart();
+        entrySets.value = entrySets.value || currentSet;
+
+        const ex = exercises[index];
+        results.push({
+            exercise_id: ex.id,
+            started_at: exerciseStartedAtClock,
+            work_seconds: accumulatedWork,
+            rest_seconds: accumulatedRest,
+            sets: entrySets.value, reps: entryReps.value,
+            weight: entryWeight.value, distance: entryDistance.value,
+        });
+
         if (index < exercises.length - 1) {
             index += 1;
-            startWorkPhase();
+            startWorkPhase(true);
         } else {
             showSummary();
         }
@@ -180,14 +246,13 @@
     }
 
     function tick() {
-        const elapsed = Math.floor((Date.now() - phaseStartedAt) / 1000);
-        timerDisplay.textContent = formatTimer(elapsed);
+        timerDisplay.textContent = formatTimer(elapsedSincePhaseStart());
     }
 
-    phaseButton.addEventListener('click', function () {
-        if (phase === 'work') startRestPhase();
-        else if (phase === 'rest') finishRestAndAdvance();
-    });
+    document.getElementById('rest-button').addEventListener('click', startRestPhase);
+    document.getElementById('skip-to-next-button').addEventListener('click', finishExerciseAndAdvance);
+    document.getElementById('next-set-button').addEventListener('click', goToNextSet);
+    document.getElementById('next-exercise-button').addEventListener('click', finishExerciseAndAdvance);
 
     document.getElementById('save-button').addEventListener('click', function (evt) {
         evt.target.disabled = true;
@@ -209,8 +274,8 @@
             });
     });
 
-    tickHandle = setInterval(tick, 250);
-    startWorkPhase();
+    setInterval(tick, 250);
+    startWorkPhase(true);
 })();
 </script>
 {% endblock %}
