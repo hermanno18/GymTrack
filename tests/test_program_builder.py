@@ -60,7 +60,7 @@ def test_add_exercise_requires_name(client, app):
 
 def test_weight_stored_in_kg_regardless_of_display_unit(client, app):
     _register(client)
-    client.post("/settings/", data={"weight_unit": "lb", "distance_unit": "mi"})
+    client.post("/settings/", data={"form_name": "units", "weight_unit": "lb", "distance_unit": "mi"})
     client.post("/programs/new/manual", data={"name": "P3"})
     with app.app_context():
         program = Program.query.filter_by(name="P3").first()

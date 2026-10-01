@@ -101,7 +101,7 @@ def test_progression_history_carries_over_across_programs(client, app):
 
 def test_weight_unit_conversion_in_logging(client, app):
     _register(client)
-    client.post("/settings/", data={"weight_unit": "lb", "distance_unit": "mi"})
+    client.post("/settings/", data={"form_name": "units", "weight_unit": "lb", "distance_unit": "mi"})
     _, day_id, ex_id = _make_program_with_exercise(client, app, "Program D", "Day 1", "Overhead Press")
     client.post(f"/workouts/log/{day_id}", data={"date": "2026-01-15", f"ex_{ex_id}_weight": "100"})  # 100 lb
     with app.app_context():

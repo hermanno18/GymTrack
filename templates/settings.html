@@ -2,39 +2,92 @@
 {% block title %}Settings - GymTrack{% endblock %}
 {% block content %}
 {% import "_icons.html" as icons %}
-<div class="max-w-md mx-auto card glow-border rounded-2xl p-8">
-    <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.settings("w-6 h-6 text-accent") }} Settings</h1>
-    <form method="post" class="space-y-6">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-        <div>
-            <label class="block text-sm text-slate-400 mb-2">Weight Unit</label>
-            <div class="flex gap-4">
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="weight_unit" value="kg" {% if settings.weight_unit == 'kg' %}checked{% endif %}>
-                    Kilograms (kg)
-                </label>
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="weight_unit" value="lb" {% if settings.weight_unit == 'lb' %}checked{% endif %}>
-                    Pounds (lb)
-                </label>
+<div class="max-w-md mx-auto space-y-6">
+
+    <div class="card glow-border rounded-2xl p-8">
+        <h1 class="text-2xl font-bold mb-6 flex items-center gap-2">{{ icons.settings("w-6 h-6 text-accent") }} Settings</h1>
+        <form method="post" class="space-y-6">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_name" value="units">
+            <div>
+                <label class="block text-sm text-slate-400 mb-2">Weight Unit</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="weight_unit" value="kg" {% if settings.weight_unit == 'kg' %}checked{% endif %}>
+                        Kilograms (kg)
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="weight_unit" value="lb" {% if settings.weight_unit == 'lb' %}checked{% endif %}>
+                        Pounds (lb)
+                    </label>
+                </div>
             </div>
-        </div>
-        <div>
-            <label class="block text-sm text-slate-400 mb-2">Distance Unit</label>
-            <div class="flex gap-4">
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="distance_unit" value="km" {% if settings.distance_unit == 'km' %}checked{% endif %}>
-                    Kilometers (km)
-                </label>
-                <label class="flex items-center gap-2">
-                    <input type="radio" name="distance_unit" value="mi" {% if settings.distance_unit == 'mi' %}checked{% endif %}>
-                    Miles (mi)
-                </label>
+            <div>
+                <label class="block text-sm text-slate-400 mb-2">Distance Unit</label>
+                <div class="flex gap-4">
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="distance_unit" value="km" {% if settings.distance_unit == 'km' %}checked{% endif %}>
+                        Kilometers (km)
+                    </label>
+                    <label class="flex items-center gap-2">
+                        <input type="radio" name="distance_unit" value="mi" {% if settings.distance_unit == 'mi' %}checked{% endif %}>
+                        Miles (mi)
+                    </label>
+                </div>
             </div>
-        </div>
-        <button type="submit" class="tap w-full py-3 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
-            Save Settings
-        </button>
-    </form>
+            <button type="submit" class="tap w-full py-3 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+                Save Settings
+            </button>
+        </form>
+    </div>
+
+    <div class="card glow-border rounded-2xl p-8">
+        <h2 class="text-lg font-bold mb-1 flex items-center gap-2">{{ icons.mail("w-5 h-5 text-accent2") }} Change Email</h2>
+        <p class="text-xs text-slate-500 mb-4">Currently: <span class="text-slate-300">{{ current_user.email }}</span></p>
+        <form method="post" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_name" value="email">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">New email</label>
+                <input type="email" name="new_email" required
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Current password</label>
+                <input type="password" name="current_password" required
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <button type="submit" class="tap w-full py-3 rounded-lg bg-accent2 text-white font-semibold hover:shadow-glow transition">
+                Update Email
+            </button>
+        </form>
+    </div>
+
+    <div class="card glow-border rounded-2xl p-8">
+        <h2 class="text-lg font-bold mb-4 flex items-center gap-2">{{ icons.lock("w-5 h-5 text-fire") }} Change Password</h2>
+        <form method="post" class="space-y-4">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="form_name" value="password">
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Current password</label>
+                <input type="password" name="current_password" required
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">New password (min 8 chars)</label>
+                <input type="password" name="new_password" required minlength="8"
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <div>
+                <label class="block text-sm text-slate-400 mb-1">Confirm new password</label>
+                <input type="password" name="confirm_password" required minlength="8"
+                       class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none">
+            </div>
+            <button type="submit" class="tap w-full py-3 rounded-lg bg-gradient-to-r from-fire to-accent2 text-bg font-semibold hover:shadow-glow transition">
+                Update Password
+            </button>
+        </form>
+    </div>
+
 </div>
 {% endblock %}
