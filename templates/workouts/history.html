@@ -11,6 +11,23 @@
         {{ tiles.session_tile(session, icons) }}
     {% endfor %}
 </div>
+{% if pagination.pages > 1 %}
+<div class="flex items-center justify-between mt-6">
+    {% if pagination.has_prev %}
+        <a href="{{ url_for('workouts.history', page=pagination.prev_num) }}"
+           class="tap px-4 py-2 rounded-lg card glow-border text-sm hover:border-accent/60 transition">&larr; Newer</a>
+    {% else %}
+        <span></span>
+    {% endif %}
+    <span class="text-xs text-slate-500">Page {{ pagination.page }} of {{ pagination.pages }}</span>
+    {% if pagination.has_next %}
+        <a href="{{ url_for('workouts.history', page=pagination.next_num) }}"
+           class="tap px-4 py-2 rounded-lg card glow-border text-sm hover:border-accent/60 transition">Older &rarr;</a>
+    {% else %}
+        <span></span>
+    {% endif %}
+</div>
+{% endif %}
 {% else %}
 <div class="relative overflow-hidden rounded-2xl card glow-border p-8 text-center">
     {{ photo.layer("empty-history.jpg", opacity="opacity-20") }}

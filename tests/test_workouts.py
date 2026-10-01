@@ -223,6 +223,40 @@ def test_same_day_sessions_ordered_most_recent_first_in_history(client, app):
     assert evening_pos < morning_pos  # most recently logged appears first
 
 
+def test_history_is_paginated_20_per_page(client, app):
+    """History has no natural upper bound -- after months of daily
+    workouts this list would otherwise grow unbounded. 20/page, newest
+    first, with Prev/Next controls."""
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Long History", "Day 1", "Squat")
+    for day in range(1, 26):  # 25 sessions -> 2 pages at 20/page
+        client.post(f"/workouts/log/{day_id}", data={
+            "date": f"2026-01-{day:02d}", f"ex_{ex_id}_sets": "1",
+        })
+
+    page1 = client.get("/workouts/history")
+    assert page1.status_code == 200
+    assert b"Page 1 of 2" in page1.data
+    assert b"Older" in page1.data
+    assert b"Newer" not in page1.data  # no previous page from page 1
+
+    page2 = client.get("/workouts/history?page=2")
+    assert page2.status_code == 200
+    assert b"Page 2 of 2" in page2.data
+    assert b"Newer" in page2.data
+    assert b"Older" not in page2.data  # no next page from the last page
+
+
+def test_history_single_page_shows_no_pagination_controls(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Short History", "Day 1", "Squat")
+    client.post(f"/workouts/log/{day_id}", data={"date": "2026-01-01", f"ex_{ex_id}_sets": "1"})
+
+    resp = client.get("/workouts/history")
+    assert resp.status_code == 200
+    assert b"Page 1 of" not in resp.data  # pagination UI only shows up when there's >1 page
+
+
 def test_same_day_sessions_ordered_most_recent_first_on_dashboard(client, app):
     """Same bug, dashboard's Recent Sessions widget flavor."""
     _register(client)

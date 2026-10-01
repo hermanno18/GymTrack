@@ -175,14 +175,20 @@ def _get_or_create_adhoc_day():
 @workouts_bp.route("/history")
 @login_required
 def history():
-    sessions = (
+    page = request.args.get("page", 1, type=int)
+    pagination = (
         WorkoutSession.query.filter_by(user_id=current_user.id)
         # Secondary sort by id: date alone has no time component, so
         # same-day sessions need a tiebreaker to guarantee most-recent-first.
         .order_by(WorkoutSession.date.desc(), WorkoutSession.id.desc())
-        .all()
+        .paginate(page=page, per_page=20, error_out=False)
     )
-    return render_template("workouts/history.html", sessions=sessions, settings=current_user.settings)
+    return render_template(
+        "workouts/history.html",
+        sessions=pagination.items,
+        pagination=pagination,
+        settings=current_user.settings,
+    )
 
 
 @workouts_bp.route("/progress")
