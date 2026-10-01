@@ -42,6 +42,16 @@ pip install -r requirements.txt
 In the cPanel Python App UI, add:
 - `SECRET_KEY` — a long random string (used to sign session cookies)
 
+To enable the "forgot password" email flow, also add (optional --
+without these, reset links are logged to the app's log file instead of
+being emailed, which still works for testing but not for real users):
+- `SMTP_HOST` — e.g. `mail.yourdomain.com` (your cPanel mailbox's SMTP server)
+- `SMTP_PORT` — `587` for STARTTLS (typical) or `465` for implicit SSL
+- `SMTP_USERNAME` — full mailbox address, e.g. `noreply@yourdomain.com`
+- `SMTP_PASSWORD` — that mailbox's password
+- `SMTP_FROM_EMAIL` — optional, defaults to `SMTP_USERNAME` if unset
+- `SMTP_USE_SSL` — optional, set to `true` only if using port 465
+
 ## 5. Point the subdomain + SSL
 1. cPanel → **Domains** → create the subdomain if you haven't already,
    pointing at the same application root.
