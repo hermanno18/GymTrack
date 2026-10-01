@@ -245,3 +245,64 @@ def test_same_day_sessions_ordered_most_recent_first_on_dashboard(client, app):
     morning_pos = resp.data.find(b"Morning Session")
     assert evening_pos != -1 and morning_pos != -1
     assert evening_pos < morning_pos
+
+
+def test_manual_log_saves_notes_for_planned_exercise(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program J", "Day 1", "Bench Press", weight="60")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-10", f"ex_{ex_id}_weight": "60",
+        f"ex_{ex_id}_notes": "  Felt heavy today  ",
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.notes == "Felt heavy today"  # trimmed
+
+
+def test_manual_log_blank_notes_stored_as_none(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program K", "Day 1", "Squat", weight="50")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-11", f"ex_{ex_id}_weight": "50", f"ex_{ex_id}_notes": "   ",
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.notes is None
+
+
+def test_notes_alone_is_enough_to_save_a_log_entry(client, app):
+    """A comment with no numbers at all should still count as 'something
+    was logged' rather than being silently skipped."""
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program L", "Day 1", "Pull-ups")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-12", f"ex_{ex_id}_notes": "Skipped -- shoulder tweak",
+    })
+    with app.app_context():
+        session = WorkoutSession.query.filter_by(program_day_id=day_id).first()
+        log = WorkoutLog.query.filter_by(session_id=session.id).first()
+        assert log is not None
+        assert log.notes == "Skipped -- shoulder tweak"
+
+
+def test_adhoc_log_saves_notes(client, app):
+    _register(client)
+    client.post("/workouts/log/adhoc", data={
+        "date": "2026-02-13", "adhoc_name": "Farmer Carry",
+        "adhoc_sets": "3", "adhoc_notes": "Grip gave out on set 3",
+    })
+    with app.app_context():
+        exercise = Exercise.query.filter_by(name_normalized="farmer carry").first()
+        log = WorkoutLog.query.filter_by(exercise_id=exercise.id).first()
+        assert log.notes == "Grip gave out on set 3"
+
+
+def test_notes_appear_in_progress_detail_history_table(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program M", "Day 1", "Deadlift", weight="100")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-14", f"ex_{ex_id}_weight": "100", f"ex_{ex_id}_notes": "New PR felt great",
+    })
+    resp = client.get("/workouts/progress/deadlift")
+    assert resp.status_code == 200
+    assert b"New PR felt great" in resp.data

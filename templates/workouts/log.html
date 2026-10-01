@@ -71,6 +71,11 @@
                 <input type="text" name="ex_{{ exercise.id }}_duration" placeholder="e.g. 24:30" pattern="\d{1,2}:\d{2}(:\d{2})?"
                        class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
             </div>
+            <div class="mt-2">
+                <label class="block text-[11px] text-slate-500 mb-1">Comment (optional -- how did it feel?)</label>
+                <input type="text" name="ex_{{ exercise.id }}_notes" maxlength="500" placeholder="e.g. Right shoulder felt tight"
+                       class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5">
+            </div>
         </div>
         {% endfor %}
     </div>
@@ -109,6 +114,8 @@
             <input type="number" step="0.1" name="adhoc_distance" placeholder="Dist" inputmode="decimal" class="text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5">
         </div>
         <input type="text" name="adhoc_duration" placeholder="Time mm:ss (optional)" pattern="\d{1,2}:\d{2}(:\d{2})?"
+               class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5 mt-2">
+        <input type="text" name="adhoc_notes" maxlength="500" placeholder="Comment (optional)"
                class="w-full text-base rounded-lg bg-bg border border-slate-700 px-3 py-2.5 mt-2">
         <button type="button" onclick="this.closest('.extra-row').remove()" class="tap text-red-400 hover:underline text-xs mt-2">Remove</button>
     </div>

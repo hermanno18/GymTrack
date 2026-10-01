@@ -31,6 +31,7 @@
                 <th>Weight ({{ settings.weight_unit }})</th>
                 <th>Distance ({{ settings.distance_unit }})</th>
                 <th>Time</th>
+                <th>Notes</th>
             </tr>
         </thead>
         <tbody>
@@ -42,6 +43,7 @@
                 <td>{{ (log.actual_weight_kg | display_weight(settings.weight_unit)) if log.actual_weight_kg is not none else '-' }}</td>
                 <td>{{ (log.actual_distance_km | display_distance(settings.distance_unit)) if log.actual_distance_km is not none else '-' }}</td>
                 <td>{{ (log.actual_duration_seconds | display_duration) if log.actual_duration_seconds is not none else '-' }}</td>
+                <td class="max-w-[14rem] truncate text-slate-400" title="{{ log.notes or '' }}">{{ log.notes or '-' }}</td>
             </tr>
             {% endfor %}
         </tbody>

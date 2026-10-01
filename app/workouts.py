@@ -95,8 +95,9 @@ def _log_planned_exercise(workout_session, exercise, unit_settings):
     weight = request.form.get(f"{prefix}_weight")
     distance = request.form.get(f"{prefix}_distance")
     duration = _to_duration(request.form.get(f"{prefix}_duration"))
+    notes = _clean_note(request.form.get(f"{prefix}_notes"))
 
-    if not any([sets, reps, weight, distance, duration]):
+    if not any([sets, reps, weight, distance, duration, notes]):
         return  # skipped this exercise today, nothing to log
 
     db.session.add(WorkoutLog(
@@ -107,6 +108,7 @@ def _log_planned_exercise(workout_session, exercise, unit_settings):
         actual_weight_kg=display_to_kg(weight, unit_settings.weight_unit),
         actual_distance_km=display_to_km(distance, unit_settings.distance_unit),
         actual_duration_seconds=duration,
+        notes=notes,
     ))
 
 
@@ -117,6 +119,7 @@ def _log_extra_exercises(workout_session, unit_settings):
     weight_list = request.form.getlist("adhoc_weight")
     distance_list = request.form.getlist("adhoc_distance")
     duration_list = request.form.getlist("adhoc_duration")
+    notes_list = request.form.getlist("adhoc_notes")
 
     for i, name in enumerate(names):
         name = name.strip()
@@ -131,6 +134,7 @@ def _log_extra_exercises(workout_session, unit_settings):
             actual_weight_kg=display_to_kg(_at(weight_list, i), unit_settings.weight_unit),
             actual_distance_km=display_to_km(_at(distance_list, i), unit_settings.distance_unit),
             actual_duration_seconds=_to_duration(_at(duration_list, i)),
+            notes=_clean_note(_at(notes_list, i)),
         ))
 
 
@@ -264,6 +268,15 @@ def _to_duration(value):
         return parse_duration_to_seconds(value)
     except ValueError:
         return None
+
+
+def _clean_note(value):
+    """Trim and cap at the WorkoutLog.notes column limit (500 chars);
+    blank input becomes None rather than an empty string."""
+    if not value:
+        return None
+    cleaned = value.strip()
+    return cleaned[:500] or None
 
 
 def _at(a_list, index):
