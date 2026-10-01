@@ -32,6 +32,62 @@ def _get_owned_day(day_id):
     )
 
 
+def _personal_bests(name_normalized):
+    """
+    Best-ever logged weight/distance/duration for this exercise name,
+    across ALL of the user's programs (same name_normalized join used
+    everywhere else for progression carryover). Each metric is looked
+    up independently since a user's heaviest lift and longest run are
+    never the same log row.
+
+    Powers the Guided Session "beat your best" target: since this only
+    ever looks at history saved BEFORE the current session, today's new
+    PR automatically becomes tomorrow's target the next time this runs
+    -- no explicit "update target" write required.
+    """
+    base_query = (
+        WorkoutLog.query.join(Exercise, WorkoutLog.exercise_id == Exercise.id)
+        .filter(Exercise.user_id == current_user.id, Exercise.name_normalized == name_normalized)
+    )
+    best_weight = (
+        base_query.filter(WorkoutLog.actual_weight_kg.isnot(None))
+        .order_by(WorkoutLog.actual_weight_kg.desc()).first()
+    )
+    best_distance = (
+        base_query.filter(WorkoutLog.actual_distance_km.isnot(None))
+        .order_by(WorkoutLog.actual_distance_km.desc()).first()
+    )
+    best_duration = (
+        base_query.filter(WorkoutLog.actual_duration_seconds.isnot(None))
+        .order_by(WorkoutLog.actual_duration_seconds.desc()).first()
+    )
+    return best_weight, best_distance, best_duration
+
+
+def _exercise_payload(ex, unit_settings):
+    best_weight, best_distance, best_duration = _personal_bests(ex.name_normalized)
+    return {
+        "id": ex.id,
+        "name": ex.name,
+        "target_sets": ex.target_sets,
+        "target_reps": ex.target_reps,
+        "target_weight_display": kg_to_display(ex.target_weight_kg, unit_settings.weight_unit),
+        "target_distance_display": km_to_display(ex.target_distance_km, unit_settings.distance_unit),
+        "target_duration_display": format_seconds_to_duration(ex.target_duration_seconds),
+        "is_timed": ex.target_duration_seconds is not None,
+        "notes": ex.notes,
+        # Best-ever-logged values (see _personal_bests) -- the client
+        # prefers these over the static target_* fields above when
+        # present, so the countdown shows "beat your own record"
+        # instead of just the coach's original plan.
+        "pr_weight_display": kg_to_display(best_weight.actual_weight_kg, unit_settings.weight_unit) if best_weight else None,
+        "pr_reps": best_weight.actual_reps if best_weight else None,
+        "pr_sets": best_weight.actual_sets if best_weight else None,
+        "pr_distance_display": km_to_display(best_distance.actual_distance_km, unit_settings.distance_unit) if best_distance else None,
+        "pr_duration_display": format_seconds_to_duration(best_duration.actual_duration_seconds) if best_duration else None,
+    }
+
+
 @guided_bp.route("/<int:day_id>")
 @login_required
 def session_start(day_id):
@@ -41,20 +97,7 @@ def session_start(day_id):
         return redirect(url_for("builder.edit_program", program_id=day.program_id))
 
     unit_settings = current_user.settings
-    exercises_payload = [
-        {
-            "id": ex.id,
-            "name": ex.name,
-            "target_sets": ex.target_sets,
-            "target_reps": ex.target_reps,
-            "target_weight_display": kg_to_display(ex.target_weight_kg, unit_settings.weight_unit),
-            "target_distance_display": km_to_display(ex.target_distance_km, unit_settings.distance_unit),
-            "target_duration_display": format_seconds_to_duration(ex.target_duration_seconds),
-            "is_timed": ex.target_duration_seconds is not None,
-            "notes": ex.notes,
-        }
-        for ex in day.exercises
-    ]
+    exercises_payload = [_exercise_payload(ex, unit_settings) for ex in day.exercises]
 
     return render_template(
         "guided/session.html",
@@ -102,6 +145,7 @@ def session_finish(day_id):
             started_at=entry.get("started_at"),
             work_seconds=work_seconds,
             rest_seconds=_to_int(entry.get("rest_seconds")),
+            notes=_clean_note(entry.get("notes")),
         ))
 
     db.session.commit()
@@ -145,3 +189,12 @@ def _to_int(value):
         return int(value)
     except (TypeError, ValueError):
         return None
+
+
+def _clean_note(value):
+    """Trim and cap at the WorkoutLog.notes column limit (500 chars);
+    blank input becomes None rather than an empty string."""
+    if not value:
+        return None
+    cleaned = value.strip()
+    return cleaned[:500] or None

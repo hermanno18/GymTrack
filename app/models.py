@@ -11,7 +11,7 @@ Exercise.name_normalized is the join key that lets progression history
 carry over automatically when the same exercise name shows up in a new
 program (see utils.normalize_name).
 """
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 
 from flask_login import UserMixin
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -23,7 +23,7 @@ class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     email = db.Column(db.String(255), unique=True, nullable=False, index=True)
     password_hash = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
 
     settings = db.relationship(
         "UserSettings", backref="user", uselist=False, cascade="all, delete-orphan"
@@ -48,7 +48,7 @@ class Program(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user_id = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
     name = db.Column(db.String(255), nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     source_pdf_filename = db.Column(db.String(255), nullable=True)
     raw_text = db.Column(db.Text, nullable=True)
 

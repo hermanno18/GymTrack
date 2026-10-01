@@ -15,15 +15,15 @@ no ASGI server, no extra bridge needed.
 7. Click **Create**.
 
 ## 2. Get the code onto the server
-**Important: all active development currently lives on the `dev` branch --
-`main` doesn't exist on GitHub yet.** Point cPanel at `dev` for now, or
-create/merge into `main` yourself first if you'd rather keep a clean
-prod-only branch (`git checkout -b main && git push origin main` from
-`dev`, then repoint cPanel at `main` later). Either way:
+**Active development lives on the `dev` branch.** A `main` branch also
+exists on GitHub, but it's a point-in-time snapshot that isn't kept in
+sync automatically -- treat `dev` as the branch to deploy from unless
+you've deliberately merged `dev` into `main` for a release cut. Either
+way:
 
 - Use cPanel's **Git Version Control** feature to pull directly from
   `https://github.com/hermanno18/GymTrack.git`, branch **`dev`** (or
-  `main`, once you've created it), or
+  `main`, if you've merged a release into it), or
 - Upload the repo contents via File Manager / SFTP into the application root
   (make sure `static/images/*.jpg` come along too -- they're tracked in git
   like any other file, no special step needed either way).
@@ -41,6 +41,20 @@ pip install -r requirements.txt
 ## 4. Set environment variables
 In the cPanel Python App UI, add:
 - `SECRET_KEY` — a long random string (used to sign session cookies)
+- `SESSION_COOKIE_SECURE` — set to `true` once HTTPS/AutoSSL is
+  confirmed working on the domain (makes the session cookie HTTPS-only).
+  **Leave unset/false until then** -- a Secure cookie sent over plain
+  HTTP is silently dropped by the browser, which breaks login.
+
+To enable the "forgot password" email flow, also add (optional --
+without these, reset links are logged to the app's log file instead of
+being emailed, which still works for testing but not for real users):
+- `SMTP_HOST` — e.g. `mail.yourdomain.com` (your cPanel mailbox's SMTP server)
+- `SMTP_PORT` — `587` for STARTTLS (typical) or `465` for implicit SSL
+- `SMTP_USERNAME` — full mailbox address, e.g. `noreply@yourdomain.com`
+- `SMTP_PASSWORD` — that mailbox's password
+- `SMTP_FROM_EMAIL` — optional, defaults to `SMTP_USERNAME` if unset
+- `SMTP_USE_SSL` — optional, set to `true` only if using port 465
 
 ## 5. Point the subdomain + SSL
 1. cPanel → **Domains** → create the subdomain if you haven't already,

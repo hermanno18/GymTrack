@@ -101,7 +101,7 @@ def test_progression_history_carries_over_across_programs(client, app):
 
 def test_weight_unit_conversion_in_logging(client, app):
     _register(client)
-    client.post("/settings/", data={"weight_unit": "lb", "distance_unit": "mi"})
+    client.post("/settings/", data={"form_name": "units", "weight_unit": "lb", "distance_unit": "mi"})
     _, day_id, ex_id = _make_program_with_exercise(client, app, "Program D", "Day 1", "Overhead Press")
     client.post(f"/workouts/log/{day_id}", data={"date": "2026-01-15", f"ex_{ex_id}_weight": "100"})  # 100 lb
     with app.app_context():
@@ -223,6 +223,40 @@ def test_same_day_sessions_ordered_most_recent_first_in_history(client, app):
     assert evening_pos < morning_pos  # most recently logged appears first
 
 
+def test_history_is_paginated_20_per_page(client, app):
+    """History has no natural upper bound -- after months of daily
+    workouts this list would otherwise grow unbounded. 20/page, newest
+    first, with Prev/Next controls."""
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Long History", "Day 1", "Squat")
+    for day in range(1, 26):  # 25 sessions -> 2 pages at 20/page
+        client.post(f"/workouts/log/{day_id}", data={
+            "date": f"2026-01-{day:02d}", f"ex_{ex_id}_sets": "1",
+        })
+
+    page1 = client.get("/workouts/history")
+    assert page1.status_code == 200
+    assert b"Page 1 of 2" in page1.data
+    assert b"Older" in page1.data
+    assert b"Newer" not in page1.data  # no previous page from page 1
+
+    page2 = client.get("/workouts/history?page=2")
+    assert page2.status_code == 200
+    assert b"Page 2 of 2" in page2.data
+    assert b"Newer" in page2.data
+    assert b"Older" not in page2.data  # no next page from the last page
+
+
+def test_history_single_page_shows_no_pagination_controls(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Short History", "Day 1", "Squat")
+    client.post(f"/workouts/log/{day_id}", data={"date": "2026-01-01", f"ex_{ex_id}_sets": "1"})
+
+    resp = client.get("/workouts/history")
+    assert resp.status_code == 200
+    assert b"Page 1 of" not in resp.data  # pagination UI only shows up when there's >1 page
+
+
 def test_same_day_sessions_ordered_most_recent_first_on_dashboard(client, app):
     """Same bug, dashboard's Recent Sessions widget flavor."""
     _register(client)
@@ -245,3 +279,64 @@ def test_same_day_sessions_ordered_most_recent_first_on_dashboard(client, app):
     morning_pos = resp.data.find(b"Morning Session")
     assert evening_pos != -1 and morning_pos != -1
     assert evening_pos < morning_pos
+
+
+def test_manual_log_saves_notes_for_planned_exercise(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program J", "Day 1", "Bench Press", weight="60")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-10", f"ex_{ex_id}_weight": "60",
+        f"ex_{ex_id}_notes": "  Felt heavy today  ",
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.notes == "Felt heavy today"  # trimmed
+
+
+def test_manual_log_blank_notes_stored_as_none(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program K", "Day 1", "Squat", weight="50")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-11", f"ex_{ex_id}_weight": "50", f"ex_{ex_id}_notes": "   ",
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=ex_id).first()
+        assert log.notes is None
+
+
+def test_notes_alone_is_enough_to_save_a_log_entry(client, app):
+    """A comment with no numbers at all should still count as 'something
+    was logged' rather than being silently skipped."""
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program L", "Day 1", "Pull-ups")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-12", f"ex_{ex_id}_notes": "Skipped -- shoulder tweak",
+    })
+    with app.app_context():
+        session = WorkoutSession.query.filter_by(program_day_id=day_id).first()
+        log = WorkoutLog.query.filter_by(session_id=session.id).first()
+        assert log is not None
+        assert log.notes == "Skipped -- shoulder tweak"
+
+
+def test_adhoc_log_saves_notes(client, app):
+    _register(client)
+    client.post("/workouts/log/adhoc", data={
+        "date": "2026-02-13", "adhoc_name": "Farmer Carry",
+        "adhoc_sets": "3", "adhoc_notes": "Grip gave out on set 3",
+    })
+    with app.app_context():
+        exercise = Exercise.query.filter_by(name_normalized="farmer carry").first()
+        log = WorkoutLog.query.filter_by(exercise_id=exercise.id).first()
+        assert log.notes == "Grip gave out on set 3"
+
+
+def test_notes_appear_in_progress_detail_history_table(client, app):
+    _register(client)
+    _, day_id, ex_id = _make_program_with_exercise(client, app, "Program M", "Day 1", "Deadlift", weight="100")
+    client.post(f"/workouts/log/{day_id}", data={
+        "date": "2026-02-14", f"ex_{ex_id}_weight": "100", f"ex_{ex_id}_notes": "New PR felt great",
+    })
+    resp = client.get("/workouts/progress/deadlift")
+    assert resp.status_code == 200
+    assert b"New PR felt great" in resp.data

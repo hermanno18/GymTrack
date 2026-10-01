@@ -5,7 +5,7 @@ Kept intentionally small (Zen of Python: flat is better than nested) --
 all the real logic lives in per-feature blueprint modules.
 """
 import os
-from flask import Flask
+from flask import Flask, render_template
 from flask_sqlalchemy import SQLAlchemy
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
@@ -33,6 +33,16 @@ def create_app(test_config=None):
             "sqlite:///" + os.path.join(app.instance_path, "gymtrack.db"),
         ),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        # Cookie hardening. SECURE is opt-in via env var (rather than
+        # tied to debug mode) because it must stay OFF until the cPanel
+        # deployment actually has AutoSSL/HTTPS working -- a Secure
+        # cookie sent over plain HTTP is just silently dropped by the
+        # browser, which would break login in a confusing way. Flip
+        # SESSION_COOKIE_SECURE=true in cPanel's env vars once HTTPS is
+        # confirmed working (see DEPLOY.md).
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
         MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10 MB cap on PDF uploads
         FUZZY_MATCH_THRESHOLD=0.85,
@@ -56,6 +66,7 @@ def create_app(test_config=None):
     _register_blueprints(app)
     _register_user_loader()
     _register_template_filters(app)
+    _register_error_handlers(app)
 
     return app
 
@@ -93,6 +104,21 @@ def _register_template_filters(app):
     app.jinja_env.filters["short_date"] = format_short_date
     app.jinja_env.filters["time_12h"] = format_time_12h
     app.jinja_env.filters["full_datetime"] = format_full_datetime
+
+
+def _register_error_handlers(app):
+    @app.errorhandler(404)
+    def not_found(_error):
+        return render_template("errors/404.html"), 404
+
+    @app.errorhandler(500)
+    def server_error(_error):
+        # A failed query/commit can leave the SQLAlchemy session in a
+        # broken transaction state; rolling back here ensures the error
+        # page itself (which still touches current_user/nav queries via
+        # base.html) can render without tripping a second exception.
+        db.session.rollback()
+        return render_template("errors/500.html"), 500
 
 
 def _ensure_schema_migrations():

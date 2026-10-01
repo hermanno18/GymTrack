@@ -20,7 +20,8 @@
         <p id="phase-label" class="text-xs uppercase tracking-widest font-semibold mb-1"></p>
         <h2 id="exercise-name" class="text-2xl font-bold mb-1"></h2>
         <p id="exercise-target" class="text-sm text-slate-400 mb-1"></p>
-        <p id="set-label" class="text-xs text-accent2 font-semibold mb-4"></p>
+        <p id="set-label" class="text-xs text-accent2 font-semibold mb-1"></p>
+        <p id="next-up-label" class="text-[11px] text-slate-500 mb-4"></p>
 
         <div id="timer-ring" class="mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 transition-colors duration-500">
             <span id="timer-display" class="text-4xl font-mono font-bold tabular-nums">0:00</span>
@@ -42,6 +43,11 @@
             <div>
                 <label class="block text-[11px] text-slate-500 mb-1">Distance ({{ settings.distance_unit }})</label>
                 <input type="number" step="0.1" id="entry-distance" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2">
+            </div>
+            <div class="col-span-2">
+                <label class="block text-[11px] text-slate-500 mb-1">Comment (optional -- how did it feel?)</label>
+                <input type="text" id="entry-notes" maxlength="500" placeholder="e.g. Right shoulder felt tight"
+                       class="w-full text-sm rounded-lg bg-bg border border-slate-700 py-2 px-3">
             </div>
         </div>
 
@@ -87,6 +93,9 @@
     const csrfToken = {{ csrf_token() | tojson }};
     const root = document.getElementById('guided-root');
     const finishUrl = root.dataset.finishUrl;
+    const dayId = root.dataset.dayId;
+    const storageKey = 'gymtrack_guided_' + dayId;
+    const STALE_MS = 6 * 60 * 60 * 1000; // 6 hours -- older saves aren't offered for resume
 
     let index = 0;
     let phase = 'work';           // 'work' | 'rest' | 'summary'
@@ -95,8 +104,8 @@
     let currentSet = 1;
     let accumulatedWork = 0;      // seconds across completed sets of THIS exercise
     let accumulatedRest = 0;      // seconds across completed rests of THIS exercise
-    const results = [];
-    const sessionStartClock = formatHM(new Date());
+    let results = [];
+    let sessionStartClock = formatHM(new Date());
 
     function pad(n) { return String(n).padStart(2, '0'); }
     function formatHM(d) { return pad(d.getHours()) + ':' + pad(d.getMinutes()); }
@@ -116,6 +125,7 @@
     const exerciseName = document.getElementById('exercise-name');
     const exerciseTarget = document.getElementById('exercise-target');
     const setLabel = document.getElementById('set-label');
+    const nextUpLabel = document.getElementById('next-up-label');
     const progressLabel = document.getElementById('progress-label');
     const progressDots = document.getElementById('progress-dots');
     const activeScreen = document.getElementById('active-screen');
@@ -127,6 +137,7 @@
     const entryReps = document.getElementById('entry-reps');
     const entryWeight = document.getElementById('entry-weight');
     const entryDistance = document.getElementById('entry-distance');
+    const entryNotes = document.getElementById('entry-notes');
 
     function renderDots() {
         progressDots.innerHTML = '';
@@ -138,14 +149,37 @@
         progressLabel.textContent = 'Exercise ' + Math.min(index + 1, exercises.length) + ' of ' + exercises.length;
     }
 
+    function renderNextUp() {
+        const upcoming = exercises[index + 1];
+        nextUpLabel.textContent = upcoming ? ('Up next: ' + upcoming.name) : 'Last exercise -- almost there!';
+    }
+
+    // Merges the coach's static plan with the user's best-ever logged
+    // numbers (see guided.py: _personal_bests). The PR wins when present,
+    // so the countdown shows "beat your own record" once there's history,
+    // and falls back to the coach's original plan for a brand-new move.
+    function effectiveTarget(ex) {
+        const isPR = ex.pr_weight_display != null || ex.pr_distance_display != null || ex.pr_duration_display != null;
+        return {
+            sets: (isPR && ex.pr_sets) ? ex.pr_sets : ex.target_sets,
+            reps: (isPR && ex.pr_reps) ? ex.pr_reps : ex.target_reps,
+            weight: ex.pr_weight_display != null ? ex.pr_weight_display : ex.target_weight_display,
+            distance: ex.pr_distance_display != null ? ex.pr_distance_display : ex.target_distance_display,
+            duration: ex.pr_duration_display || ex.target_duration_display,
+            isPR: isPR,
+        };
+    }
+
     function targetSummary(ex) {
+        const t = effectiveTarget(ex);
         const parts = [];
-        if (ex.target_sets || ex.target_reps) parts.push((ex.target_sets || '-') + ' \u00d7 ' + (ex.target_reps || '-'));
-        if (ex.target_weight_display != null) parts.push(ex.target_weight_display + ' {{ settings.weight_unit }}');
-        if (ex.target_distance_display != null) parts.push(ex.target_distance_display + ' {{ settings.distance_unit }}');
-        if (ex.target_duration_display) parts.push(ex.target_duration_display);
+        if (t.sets || t.reps) parts.push((t.sets || '-') + ' \u00d7 ' + (t.reps || '-'));
+        if (t.weight != null) parts.push(t.weight + ' {{ settings.weight_unit }}');
+        if (t.distance != null) parts.push(t.distance + ' {{ settings.distance_unit }}');
+        if (t.duration) parts.push(t.duration);
         if (ex.notes) parts.push(ex.notes);
-        return parts.length ? 'Target: ' + parts.join(' \u00b7 ') : 'No specific target -- just go!';
+        const prefix = t.isPR ? '\ud83c\udfc6 Beat your best: ' : 'Target: ';
+        return parts.length ? prefix + parts.join(' \u00b7 ') : 'No specific target -- just go!';
     }
 
     function renderSetLabel() {
@@ -153,30 +187,12 @@
         setLabel.textContent = ex.target_sets ? ('Set ' + currentSet + ' of ' + ex.target_sets) : ('Set ' + currentSet);
     }
 
-    // isNewExercise=true resets per-exercise counters; false means "another
-    // set of the SAME exercise" (the actual bug fix: resting no longer
-    // forces you onto the next exercise).
-    function startWorkPhase(isNewExercise) {
-        phase = 'work';
+    function renderWorkScreen() {
         const ex = exercises[index];
-        phaseStartedAt = Date.now();
-
-        if (isNewExercise) {
-            currentSet = 1;
-            accumulatedWork = 0;
-            accumulatedRest = 0;
-            exerciseStartedAtClock = formatClock(new Date());
-            entrySets.value = ex.target_sets || '';
-            entryReps.value = ex.target_reps || '';
-            entryWeight.value = ex.target_weight_display != null ? ex.target_weight_display : '';
-            entryDistance.value = ex.target_distance_display != null ? ex.target_distance_display : '';
-        } else {
-            currentSet += 1;
-        }
-
         exerciseName.textContent = ex.name;
         exerciseTarget.textContent = targetSummary(ex);
         renderSetLabel();
+        renderNextUp();
         phaseLabel.textContent = 'WORKING';
         phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-accent';
         timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-accent shadow-glow transition-colors duration-500';
@@ -188,6 +204,49 @@
         renderDots();
     }
 
+    function resetForNewExercise() {
+        const ex = exercises[index];
+        const t = effectiveTarget(ex);
+        currentSet = 1;
+        accumulatedWork = 0;
+        accumulatedRest = 0;
+        exerciseStartedAtClock = formatClock(new Date());
+        entrySets.value = t.sets || '';
+        entryReps.value = t.reps || '';
+        entryWeight.value = t.weight != null ? t.weight : '';
+        entryDistance.value = t.distance != null ? t.distance : '';
+        entryNotes.value = '';
+    }
+
+    // isNewExercise=true resets per-exercise counters; false means "another
+    // set of the SAME exercise" (resting no longer forces you onto the next
+    // exercise).
+    function startWorkPhase(isNewExercise) {
+        phase = 'work';
+        phaseStartedAt = Date.now();
+        if (isNewExercise) {
+            resetForNewExercise();
+        } else {
+            currentSet += 1;
+        }
+        renderWorkScreen();
+        saveState();
+    }
+
+    function renderRestScreen() {
+        const isLast = index === exercises.length - 1;
+        phaseLabel.textContent = 'RESTING';
+        phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-fire';
+        timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-fire transition-colors duration-500';
+        exerciseName.textContent = 'Take a breather';
+        exerciseTarget.textContent = 'Ready when you are -- no rush.';
+        renderSetLabel();
+        renderNextUp();
+        nextExerciseLabel.textContent = isLast ? 'Finish Workout' : 'Next Exercise';
+        workButtons.classList.add('hidden');
+        restButtons.classList.remove('hidden');
+    }
+
     function startRestPhase() {
         // Finishing a set's work: bank the elapsed time and bump the
         // "sets done" quick-entry field to match, then wait for the user
@@ -197,16 +256,8 @@
 
         phase = 'rest';
         phaseStartedAt = Date.now();
-        const isLast = index === exercises.length - 1;
-        phaseLabel.textContent = 'RESTING';
-        phaseLabel.className = 'text-xs uppercase tracking-widest font-semibold mb-1 text-fire';
-        timerRing.className = 'mx-auto mb-6 w-44 h-44 rounded-full flex items-center justify-center border-4 border-fire transition-colors duration-500';
-        exerciseName.textContent = 'Take a breather';
-        exerciseTarget.textContent = 'Ready when you are -- no rush.';
-        renderSetLabel();
-        nextExerciseLabel.textContent = isLast ? 'Finish Workout' : 'Next Exercise';
-        workButtons.classList.add('hidden');
-        restButtons.classList.remove('hidden');
+        renderRestScreen();
+        saveState();
     }
 
     function goToNextSet() {
@@ -229,6 +280,7 @@
             rest_seconds: accumulatedRest,
             sets: entrySets.value, reps: entryReps.value,
             weight: entryWeight.value, distance: entryDistance.value,
+            notes: entryNotes.value,
         });
 
         if (index < exercises.length - 1) {
@@ -239,8 +291,7 @@
         }
     }
 
-    function showSummary() {
-        phase = 'summary';
+    function renderSummaryScreen() {
         activeScreen.classList.add('hidden');
         summaryScreen.classList.remove('hidden');
         const totalWork = results.reduce((sum, r) => sum + (r.work_seconds || 0), 0);
@@ -249,9 +300,91 @@
             exercises.length + ' exercises \u00b7 ' + formatTimer(totalWork) + ' working \u00b7 ' + formatTimer(totalRest) + ' resting';
     }
 
+    function showSummary() {
+        phase = 'summary';
+        renderSummaryScreen();
+        saveState();
+        releaseWakeLock();
+    }
+
     function tick() {
         timerDisplay.textContent = formatTimer(elapsedSincePhaseStart());
     }
+
+    // ---- Resume-after-refresh: autosave to localStorage ----
+    function saveState() {
+        try {
+            localStorage.setItem(storageKey, JSON.stringify({
+                index, phase, currentSet, accumulatedWork, accumulatedRest,
+                results, sessionStartClock, exerciseStartedAtClock,
+                elapsedAtSaveMs: Date.now() - phaseStartedAt,
+                savedAt: Date.now(),
+            }));
+        } catch (e) { /* localStorage unavailable (private mode / quota) -- degrade silently */ }
+    }
+
+    function clearSavedState() {
+        try { localStorage.removeItem(storageKey); } catch (e) { /* ignore */ }
+    }
+
+    function loadSavedState() {
+        try {
+            const raw = localStorage.getItem(storageKey);
+            if (!raw) return null;
+            const saved = JSON.parse(raw);
+            if (!saved || typeof saved.index !== 'number') return null;
+            if (Date.now() - (saved.savedAt || 0) > STALE_MS) return null;
+            if (saved.index >= exercises.length) return null;
+            return saved;
+        } catch (e) {
+            return null;
+        }
+    }
+
+    function restoreFromSaved(saved) {
+        index = saved.index;
+        phase = saved.phase;
+        currentSet = saved.currentSet;
+        accumulatedWork = saved.accumulatedWork || 0;
+        accumulatedRest = saved.accumulatedRest || 0;
+        results = Array.isArray(saved.results) ? saved.results : [];
+        sessionStartClock = saved.sessionStartClock || sessionStartClock;
+        exerciseStartedAtClock = saved.exerciseStartedAtClock;
+        phaseStartedAt = Date.now() - (saved.elapsedAtSaveMs || 0);
+
+        if (phase === 'summary') renderSummaryScreen();
+        else if (phase === 'rest') renderRestScreen();
+        else renderWorkScreen();
+    }
+
+    function boot() {
+        const saved = loadSavedState();
+        if (saved && window.confirm('Looks like a workout got interrupted. Resume where you left off?')) {
+            restoreFromSaved(saved);
+        } else {
+            if (saved) clearSavedState();
+            startWorkPhase(true);
+        }
+    }
+
+    // ---- Keep the screen awake while a workout is in progress ----
+    let wakeLock = null;
+    async function requestWakeLock() {
+        if (!('wakeLock' in navigator) || phase === 'summary') return;
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+        } catch (e) { /* unsupported / denied -- screen just behaves normally */ }
+    }
+    function releaseWakeLock() {
+        if (wakeLock) { wakeLock.release().catch(() => {}); wakeLock = null; }
+    }
+    // The OS/browser auto-releases the lock whenever the tab is hidden
+    // (user locks the phone, switches apps, etc) -- we just need to
+    // re-acquire it when the user comes back, as long as the workout
+    // isn't finished yet.
+    document.addEventListener('visibilitychange', function () {
+        if (document.visibilityState === 'visible' && phase !== 'summary') requestWakeLock();
+    });
 
     document.getElementById('rest-button').addEventListener('click', startRestPhase);
     document.getElementById('skip-to-next-button').addEventListener('click', finishExerciseAndAdvance);
@@ -271,7 +404,7 @@
             }),
         })
             .then((r) => r.json())
-            .then((data) => { window.location.href = data.redirect; })
+            .then((data) => { clearSavedState(); window.location.href = data.redirect; })
             .catch(() => {
                 evt.target.disabled = false;
                 evt.target.textContent = 'Save & View My Story (retry)';
@@ -279,7 +412,8 @@
     });
 
     setInterval(tick, 250);
-    startWorkPhase(true);
+    boot();
+    requestWakeLock();
 })();
 </script>
 {% endblock %}

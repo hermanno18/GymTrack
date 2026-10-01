@@ -225,3 +225,75 @@ def test_dashboard_recent_sessions_matches_history_tile_and_links_to_it(client, 
     assert b"See all" in resp.data
     assert f"/guided/story/{session_id}".encode() in resp.data
     assert b"View Story" in resp.data
+
+
+def test_session_finish_saves_per_exercise_notes(client, app):
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "08:00", "end_time": "08:30",
+        "results": [
+            {"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30,
+             "sets": "3", "reps": "8", "weight": "60", "notes": "  Left shoulder a bit tight  "},
+        ],
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=exercise_ids[0]).first()
+        assert log.notes == "Left shoulder a bit tight"
+
+
+def test_session_finish_blank_notes_stored_as_none(client, app):
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "08:00", "end_time": "08:30",
+        "results": [{"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30, "notes": "   "}],
+    })
+    with app.app_context():
+        log = WorkoutLog.query.filter_by(exercise_id=exercise_ids[0]).first()
+        assert log.notes is None
+
+
+def test_session_start_has_no_pr_fields_before_any_history(client, app):
+    """Brand new exercise, never logged before: no personal-best data
+    exists yet, so the PR fields should be null (client falls back to
+    the coach's static target)."""
+    _register(client)
+    day_id, _ = _make_day_with_exercises(client, app)
+    resp = client.get(f"/guided/{day_id}")
+    assert resp.status_code == 200
+    assert b'"pr_weight_display": null' in resp.data
+
+
+def test_session_start_shows_personal_best_as_target(client, app):
+    """Once a heavier weight has been logged than the coach's plan, the
+    Guided Session countdown should offer that PR as the new target."""
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app)
+    # Bench Press's program target was 60kg -- log a heavier top set.
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "07:00", "end_time": "07:30",
+        "results": [{"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30,
+                      "sets": "3", "reps": "6", "weight": "70"}],
+    })
+    resp = client.get(f"/guided/{day_id}")
+    assert resp.status_code == 200
+    assert b'"pr_weight_display": 70.0' in resp.data
+    assert b'"pr_reps": 6' in resp.data
+
+
+def test_personal_best_carries_over_across_programs(client, app):
+    """Same exercise name in a brand new program should still surface the
+    PR set under the old program (matches the existing progression-
+    carryover behaviour used everywhere else in the app)."""
+    _register(client)
+    day_id, exercise_ids = _make_day_with_exercises(client, app, program_name="Block 1")
+    client.post(f"/guided/{day_id}/finish", json={
+        "start_time": "07:00", "end_time": "07:30",
+        "results": [{"exercise_id": exercise_ids[0], "work_seconds": 60, "rest_seconds": 30,
+                      "sets": "3", "reps": "6", "weight": "70"}],
+    })
+    new_day_id, _ = _make_day_with_exercises(client, app, program_name="Block 2")
+    resp = client.get(f"/guided/{new_day_id}")
+    assert resp.status_code == 200
+    assert b'"pr_weight_display": 70.0' in resp.data

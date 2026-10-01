@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Something Went Wrong - GymTrack{% endblock %}
+{% block content %}
+{% import "_icons.html" as icons %}
+<div class="max-w-md mx-auto card glow-border rounded-2xl p-8 text-center">
+    <div class="flex justify-center mb-4 text-fire">{{ icons.flame("w-10 h-10") }}</div>
+    <h1 class="text-2xl font-bold mb-2">Something went wrong</h1>
+    <p class="text-slate-400 text-sm mb-6">
+        That's on us, not you. Try again in a moment -- your workout data is safe either way.
+    </p>
+    <a href="{{ url_for('dashboard.home') if current_user.is_authenticated else url_for('auth.login') }}"
+       class="tap inline-block px-6 py-3 rounded-lg bg-accent text-bg font-semibold hover:shadow-glow transition">
+        Back to GymTrack
+    </a>
+</div>
+{% endblock %}
