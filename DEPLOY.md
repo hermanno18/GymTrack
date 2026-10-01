@@ -15,15 +15,15 @@ no ASGI server, no extra bridge needed.
 7. Click **Create**.
 
 ## 2. Get the code onto the server
-**Important: all active development currently lives on the `dev` branch --
-`main` doesn't exist on GitHub yet.** Point cPanel at `dev` for now, or
-create/merge into `main` yourself first if you'd rather keep a clean
-prod-only branch (`git checkout -b main && git push origin main` from
-`dev`, then repoint cPanel at `main` later). Either way:
+**Active development lives on the `dev` branch.** A `main` branch also
+exists on GitHub, but it's a point-in-time snapshot that isn't kept in
+sync automatically -- treat `dev` as the branch to deploy from unless
+you've deliberately merged `dev` into `main` for a release cut. Either
+way:
 
 - Use cPanel's **Git Version Control** feature to pull directly from
   `https://github.com/hermanno18/GymTrack.git`, branch **`dev`** (or
-  `main`, once you've created it), or
+  `main`, if you've merged a release into it), or
 - Upload the repo contents via File Manager / SFTP into the application root
   (make sure `static/images/*.jpg` come along too -- they're tracked in git
   like any other file, no special step needed either way).
