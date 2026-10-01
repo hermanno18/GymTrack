@@ -41,6 +41,10 @@ pip install -r requirements.txt
 ## 4. Set environment variables
 In the cPanel Python App UI, add:
 - `SECRET_KEY` — a long random string (used to sign session cookies)
+- `SESSION_COOKIE_SECURE` — set to `true` once HTTPS/AutoSSL is
+  confirmed working on the domain (makes the session cookie HTTPS-only).
+  **Leave unset/false until then** -- a Secure cookie sent over plain
+  HTTP is silently dropped by the browser, which breaks login.
 
 To enable the "forgot password" email flow, also add (optional --
 without these, reset links are logged to the app's log file instead of

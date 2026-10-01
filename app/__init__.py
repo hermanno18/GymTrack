@@ -33,6 +33,16 @@ def create_app(test_config=None):
             "sqlite:///" + os.path.join(app.instance_path, "gymtrack.db"),
         ),
         SQLALCHEMY_TRACK_MODIFICATIONS=False,
+        # Cookie hardening. SECURE is opt-in via env var (rather than
+        # tied to debug mode) because it must stay OFF until the cPanel
+        # deployment actually has AutoSSL/HTTPS working -- a Secure
+        # cookie sent over plain HTTP is just silently dropped by the
+        # browser, which would break login in a confusing way. Flip
+        # SESSION_COOKIE_SECURE=true in cPanel's env vars once HTTPS is
+        # confirmed working (see DEPLOY.md).
+        SESSION_COOKIE_HTTPONLY=True,
+        SESSION_COOKIE_SAMESITE="Lax",
+        SESSION_COOKIE_SECURE=os.environ.get("SESSION_COOKIE_SECURE", "false").lower() == "true",
         UPLOAD_FOLDER=os.path.join(app.instance_path, "uploads"),
         MAX_CONTENT_LENGTH=10 * 1024 * 1024,  # 10 MB cap on PDF uploads
         FUZZY_MATCH_THRESHOLD=0.85,
