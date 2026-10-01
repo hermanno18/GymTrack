@@ -8,13 +8,24 @@ SECRET_KEY/DATABASE_URL in app/__init__.py) so pointing this at a real
 mailbox in production is a cPanel env-var change, not a code change.
 
 If SMTP_HOST isn't configured (local dev, or before an admin has set
-up a mailbox), the reset link is logged to the console instead of
-actually emailed -- the forgot-password flow still works end-to-end
-for local testing, it just prints the link instead of sending it.
+up a mailbox), the reset link is logged instead of actually emailed --
+the forgot-password flow still works end-to-end for local testing, it
+just logs the link instead of sending it.
+
+Uses the stdlib `logging` module rather than `print()`: Python's
+logging has a built-in "handler of last resort" that writes WARNING+
+to stderr even with zero configuration, and stderr is what cPanel/
+Passenger actually captures into the app's error log -- stdout from a
+WSGI app is much less reliably captured. Deliberately not using Flask's
+`current_app.logger` here so this module has no Flask dependency and
+stays trivially testable/importable on its own.
 """
+import logging
 import os
 import smtplib
 from email.message import EmailMessage
+
+logger = logging.getLogger(__name__)
 
 
 def send_password_reset_email(to_email, reset_url):
@@ -31,7 +42,9 @@ def send_password_reset_email(to_email, reset_url):
 def _send(to_email, subject, body):
     host = os.environ.get("SMTP_HOST")
     if not host:
-        print(f"[GymTrack] SMTP_HOST not configured -- would have emailed {to_email}:\n{body}")
+        logger.warning(
+            "SMTP_HOST not configured -- would have emailed %s:\n%s", to_email, body
+        )
         return False
 
     port = int(os.environ.get("SMTP_PORT", "587"))
@@ -46,11 +59,22 @@ def _send(to_email, subject, body):
     msg["To"] = to_email
     msg.set_content(body)
 
-    smtp_cls = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
-    with smtp_cls(host, port, timeout=10) as server:
-        if not use_ssl:
-            server.starttls()
-        if username and password:
-            server.login(username, password)
-        server.send_message(msg)
+    try:
+        smtp_cls = smtplib.SMTP_SSL if use_ssl else smtplib.SMTP
+        with smtp_cls(host, port, timeout=10) as server:
+            if not use_ssl:
+                server.starttls()
+            if username and password:
+                server.login(username, password)
+            server.send_message(msg)
+    except (smtplib.SMTPException, OSError):
+        # A transient mail-server hiccup should never surface as a 500
+        # to the user -- the forgot-password route always shows the
+        # same generic "a reset link is on its way" message regardless
+        # of whether sending actually succeeded, so swallowing this
+        # here (after logging it loudly) is the correct behavior, not
+        # error-hiding.
+        logger.exception("Failed to send password reset email to %s", to_email)
+        return False
+
     return True

@@ -131,13 +131,37 @@ def test_login_page_links_to_forgot_password(client):
     assert b'href="/auth/forgot"' in resp.data
 
 
-def test_mailer_falls_back_to_console_log_without_smtp_host(monkeypatch, capsys):
+def test_mailer_falls_back_to_logging_without_smtp_host(monkeypatch, caplog):
     """When SMTP_HOST isn't configured (local dev, or before an admin
-    sets up a mailbox), sending degrades to a console log instead of
+    sets up a mailbox), sending degrades to a logged warning instead of
     raising -- the flow should never crash just because email isn't
     wired up yet."""
     monkeypatch.delenv("SMTP_HOST", raising=False)
     from app.mailer import send_password_reset_email
-    result = send_password_reset_email("someone@example.com", "http://example.com/auth/reset/abc")
+    with caplog.at_level("WARNING"):
+        result = send_password_reset_email("someone@example.com", "http://example.com/auth/reset/abc")
     assert result is False
-    assert "someone@example.com" in capsys.readouterr().out
+    assert "someone@example.com" in caplog.text
+
+
+def test_mailer_handles_smtp_failure_gracefully(monkeypatch, caplog):
+    """A transient SMTP outage should be logged and return False, never
+    raise -- the forgot-password route must always show its generic
+    success message regardless of whether sending actually worked.
+    Mocks smtplib directly so this doesn't depend on real network/DNS
+    behavior (fast and deterministic either way)."""
+    import app.mailer as mailer_module
+
+    class _ExplodingSMTP:
+        def __init__(self, *args, **kwargs):
+            raise OSError("connection refused (simulated)")
+
+    monkeypatch.setenv("SMTP_HOST", "smtp.example.com")
+    monkeypatch.setattr(mailer_module.smtplib, "SMTP", _ExplodingSMTP)
+
+    with caplog.at_level("ERROR"):
+        result = mailer_module.send_password_reset_email(
+            "someone@example.com", "http://example.com/auth/reset/abc"
+        )
+    assert result is False
+    assert "Failed to send" in caplog.text
