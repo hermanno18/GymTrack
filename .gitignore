@@ -11,3 +11,4 @@ gymtrack_deploy_key
 gymtrack_deploy_key.pub
 .DS_Store
 .htaccess
+tmp/
