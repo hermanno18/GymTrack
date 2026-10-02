@@ -5,11 +5,11 @@
 set -e
 
 # --- EDIT THESE TWO VALUES ONCE, after the one-time cPanel setup in DEPLOY.md ---
-CPANEL_USERNAME="REPLACE_ME_USERNAME"
-PYTHON_VERSION="REPLACE_ME_PYTHON_VERSION"
+CPANEL_USERNAME="sccmvt58"
+PYTHON_VERSION="3.10"
 # --- Nothing below this line needs editing ---
 
-APP_ROOT="/home/$CPANEL_USERNAME/gymtrack"
+APP_ROOT="/home/$CPANEL_USERNAME/repositories/gymtrack"
 VENV="/home/$CPANEL_USERNAME/virtualenv/gymtrack/$PYTHON_VERSION/bin/activate"
 
 source "$VENV"
