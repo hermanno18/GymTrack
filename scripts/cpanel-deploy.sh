@@ -10,7 +10,7 @@ PYTHON_VERSION="3.10"
 # --- Nothing below this line needs editing ---
 
 APP_ROOT="/home/$CPANEL_USERNAME/repositories/gymtrack"
-VENV="/home/$CPANEL_USERNAME/virtualenv/gymtrack/$PYTHON_VERSION/bin/activate"
+VENV="/home/$CPANEL_USERNAME/virtualenv/repositories/gymtrack/$PYTHON_VERSION/bin/activate"
 
 source "$VENV"
 cd "$APP_ROOT"
