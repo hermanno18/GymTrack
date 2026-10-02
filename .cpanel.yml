@@ -1,0 +1,9 @@
+---
+deployment:
+  tasks:
+    # All deploy logic lives in scripts/cpanel-deploy.sh (edit the two
+    # placeholder values at the top of that file once, per DEPLOY.md).
+    # Kept as a single script rather than multiple task lines here because
+    # cPanel runs each task line as its own isolated shell - exported
+    # variables do NOT persist from one task line to the next.
+    - /bin/bash ./scripts/cpanel-deploy.sh

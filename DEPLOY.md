@@ -14,28 +14,55 @@ no ASGI server, no extra bridge needed.
 6. Application Entry point: `application`
 7. Click **Create**.
 
-## 2. Get the code onto the server
-**Active development lives on the `dev` branch.** A `main` branch also
-exists on GitHub, but it's a point-in-time snapshot that isn't kept in
-sync automatically -- treat `dev` as the branch to deploy from unless
-you've deliberately merged `dev` into `main` for a release cut. Either
-way:
+## 2. Get the code onto the server (one-time Git Version Control setup)
+**`main` is the deploy branch.** Active day-to-day development happens on
+`dev` -- `main` only moves forward when you deliberately merge a release
+cut into it. This keeps "what's live" and "what's in progress" cleanly
+separated, and means a half-finished `dev` change never accidentally ships.
 
-- Use cPanel's **Git Version Control** feature to pull directly from
-  `https://github.com/hermanno18/GymTrack.git`, branch **`dev`** (or
-  `main`, if you've merged a release into it), or
-- Upload the repo contents via File Manager / SFTP into the application root
-  (make sure `static/images/*.jpg` come along too -- they're tracked in git
-  like any other file, no special step needed either way).
+1. cPanel -> **Git Version Control** -> **Create**
+2. **Clone URL**: `https://github.com/hermanno18/GymTrack.git`
+3. **Repository Path**: `/home/<user>/gymtrack` (must match the Application
+   root from Step 1 exactly)
+4. **Branch**: `main`
+5. Click **Create**
 
-## 3. Install dependencies
-cPanel's Python App page gives you a command like:
+## 3. One-click deploy via `.cpanel.yml`
+This repo ships a `.cpanel.yml` + `scripts/cpanel-deploy.sh` pair that
+automates dependency installs and restarting the app, so you no longer
+need to SSH in by hand for every deploy.
+
+Open `scripts/cpanel-deploy.sh` and fill in the two placeholder values near
+the top, once:
 ```bash
-source /home/<user>/virtualenv/gymtrack/3.x/bin/activate && cd /home/<user>/gymtrack
+CPANEL_USERNAME="REPLACE_ME_USERNAME"        # your actual cPanel username
+PYTHON_VERSION="REPLACE_ME_PYTHON_VERSION"   # e.g. 3.11 (from Step 1's app page)
 ```
-Run that, then:
+Commit and push that change once -- it's account-specific config, not a
+secret, so it's fine to commit. `.cpanel.yml` itself never needs editing;
+it just calls this script. Logic lives in one self-contained script
+specifically because **cPanel runs each `.cpanel.yml` task line as its own
+isolated shell** -- a variable exported on one line would NOT carry over
+to the next, so keeping it all in one script sidesteps that entirely.
+
+### Every deploy after that
+1. Merge your changes into `main` and push to GitHub
+2. cPanel -> **Git Version Control** -> your repo -> **Manage**
+3. Click **Update from Remote** (pulls the latest commit)
+4. Click **Deploy HEAD Commit**
+
+That's it -- the `.cpanel.yml` task activates the venv, runs
+`pip install -r requirements.txt`, and touches `tmp/restart.txt` so
+Passenger picks up the new code immediately.
+
+### If something goes wrong with the automated deploy
+Fall back to doing it by hand via cPanel -> **Terminal**:
 ```bash
+source /home/<user>/virtualenv/gymtrack/<python-version>/bin/activate
+cd /home/<user>/gymtrack
+git pull
 pip install -r requirements.txt
+touch tmp/restart.txt
 ```
 
 ## 4. Set environment variables
@@ -61,8 +88,12 @@ being emailed, which still works for testing but not for real users):
    pointing at the same application root.
 2. cPanel → **SSL/TLS Status** → run AutoSSL for the subdomain (usually free).
 
-## 6. Restart
-Back on the Setup Python App page, click **Restart**. Visit your subdomain.
+## 6. Restart (first time only)
+Back on the Setup Python App page, click **Restart** once, after the
+initial Git pull + `pip install` + env vars are all in place. Visit your
+subdomain to confirm it's live. From here on, every future deploy's
+restart is handled automatically by `scripts/cpanel-deploy.sh` (Step 3) --
+you shouldn't need to click Restart manually again.
 
 ## Notes
 - The SQLite DB and any uploaded PDFs live under `instance/`, which sits
@@ -74,4 +105,5 @@ Back on the Setup Python App page, click **Restart**. Visit your subdomain.
   it ever needs to serve heavier traffic, point Apache/LiteSpeed at
   `static/` directly instead for better performance.
 - If cPanel's Python App version changes later, re-run `pip install -r
-  requirements.txt` after switching.
+  requirements.txt` after switching (or just trigger a deploy via
+  Step 3 -- it reinstalls dependencies every time anyway).
