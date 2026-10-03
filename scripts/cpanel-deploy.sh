@@ -4,13 +4,17 @@
 # run in isolation and do NOT share exported variables between them).
 set -e
 
-# --- EDIT THESE TWO VALUES ONCE, after the one-time cPanel setup in DEPLOY.md ---
-CPANEL_USERNAME="REPLACE_ME_USERNAME"
-PYTHON_VERSION="REPLACE_ME_PYTHON_VERSION"
-# --- Nothing below this line needs editing ---
-
-APP_ROOT="/home/$CPANEL_USERNAME/gymtrack"
-VENV="/home/$CPANEL_USERNAME/virtualenv/gymtrack/$PYTHON_VERSION/bin/activate"
+# --- EDIT THESE VALUES ONCE, matching whatever Setup Python App actually shows ---
+CPANEL_USERNAME="sccmvt58"
+PYTHON_VERSION="3.10"            # CONFIRM via File Manager: check the folder name
+                                   # under /home/sccmvt58/virtualenv/repositories/gymtrack/
+                                   # -- it may be "3.10" or "3.10.21", use whatever's there.
+# Application root in cPanel is "repositories/gymtrack" (NOT just "gymtrack") --
+# both APP_ROOT and VENV below must mirror that exact relative path, or this
+# script silently fails at the cd/source step and never installs deps or
+# restarts Passenger (which is almost certainly what's been happening).
+APP_ROOT="/home/$CPANEL_USERNAME/repositories/gymtrack"
+VENV="/home/$CPANEL_USERNAME/virtualenv/repositories/gymtrack/$PYTHON_VERSION/bin/activate"
 
 source "$VENV"
 cd "$APP_ROOT"
