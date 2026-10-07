@@ -1,57 +1,63 @@
 <template>
-  <div class="min-h-screen flex items-center justify-center bg-slate-950 px-4">
-    <form
-      class="w-full max-w-sm bg-slate-900 border border-slate-800 rounded-xl p-8 space-y-5"
-      @submit.prevent="submit"
-    >
-      <div>
-        <h1 class="text-2xl font-bold text-white">Create your account</h1>
-        <p class="text-slate-400 text-sm mt-1">Free, forever. No credit card, obviously.</p>
+  <div class="min-h-screen flex items-center justify-center px-4">
+    <div class="max-w-sm w-full card glow-border rounded-2xl overflow-hidden shadow-glow">
+      <div class="relative h-32">
+        <PhotoLayer filename="gym-hero.jpg" opacity="opacity-70" />
+        <div class="absolute inset-0 bg-gradient-to-t from-panel via-panel/40 to-transparent" />
       </div>
+      <form class="p-8 pt-6 space-y-5" @submit.prevent="submit">
+        <h1 class="text-2xl font-bold text-accent2">Create your account</h1>
 
-      <div v-if="errorMessage" class="text-sm text-red-400 bg-red-950/50 border border-red-900 rounded-md px-3 py-2">
-        {{ errorMessage }}
-      </div>
+        <Transition name="fade">
+          <div v-if="errorMessage" class="flex items-start gap-2 text-sm text-red-300 bg-red-950/60 border border-red-500/40 rounded-lg px-3 py-2">
+            <Icon name="alert" class="w-4 h-4 mt-0.5 shrink-0" />
+            <span>{{ errorMessage }}</span>
+          </div>
+        </Transition>
 
-      <div class="space-y-1">
-        <label class="text-sm text-slate-300" for="email">Email</label>
-        <input
-          id="email"
-          v-model="email"
-          type="email"
-          required
-          autocomplete="email"
-          class="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
+        <div>
+          <label class="flex items-center gap-1.5 text-sm text-slate-400 mb-1" for="email">
+            <Icon name="mail" class="w-3.5 h-3.5" /> Email
+          </label>
+          <input
+            id="email"
+            v-model="email"
+            type="email"
+            required
+            autocomplete="email"
+            class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent2 focus:outline-none transition"
+          >
+        </div>
+
+        <div>
+          <label class="flex items-center gap-1.5 text-sm text-slate-400 mb-1" for="password">
+            <Icon name="lock" class="w-3.5 h-3.5" /> Password
+          </label>
+          <input
+            id="password"
+            v-model="password"
+            type="password"
+            required
+            minlength="8"
+            autocomplete="new-password"
+            class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent2 focus:outline-none transition"
+          >
+          <p class="text-xs text-slate-500 mt-1">At least 8 characters.</p>
+        </div>
+
+        <button
+          type="submit"
+          :disabled="loading"
+          class="tap w-full py-3 rounded-lg bg-accent2 text-bg font-semibold hover:shadow-glow disabled:opacity-50 transition"
         >
-      </div>
+          {{ loading ? 'Creating account…' : 'Sign up' }}
+        </button>
 
-      <div class="space-y-1">
-        <label class="text-sm text-slate-300" for="password">Password</label>
-        <input
-          id="password"
-          v-model="password"
-          type="password"
-          required
-          minlength="8"
-          autocomplete="new-password"
-          class="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-        >
-        <p class="text-xs text-slate-500">At least 8 characters.</p>
-      </div>
-
-      <button
-        type="submit"
-        :disabled="loading"
-        class="w-full rounded-md bg-purple-500 hover:bg-purple-400 disabled:opacity-50 text-slate-950 font-semibold py-2 transition"
-      >
-        {{ loading ? 'Creating account…' : 'Sign up' }}
-      </button>
-
-      <p class="text-sm text-slate-400 text-center">
-        Already have an account?
-        <NuxtLink to="/login" class="text-cyan-400 hover:underline">Log in</NuxtLink>
-      </p>
-    </form>
+        <p class="text-sm text-slate-400">
+          Already have an account? <NuxtLink to="/login" class="text-accent hover:underline">Log in</NuxtLink>
+        </p>
+      </form>
+    </div>
   </div>
 </template>
 

@@ -1,64 +1,63 @@
 <template>
-  <div class="min-h-screen bg-slate-950 text-white">
-    <AppNav />
-    <main class="max-w-3xl mx-auto px-6 py-10 space-y-8">
-      <div v-if="pending" class="text-slate-400">Loading…</div>
-      <template v-else-if="program">
-        <div class="flex items-center justify-between">
-          <h1 class="text-2xl font-bold">{{ program.name }}</h1>
-          <button class="text-sm text-red-400 hover:underline" @click="deleteProgram">
-            Delete program
-          </button>
-        </div>
+  <div class="space-y-6">
+    <div v-if="pending" class="text-slate-400">Loading…</div>
+    <template v-else-if="program">
+      <div class="flex items-center justify-between">
+        <h1 class="text-2xl font-bold">{{ program.name }}</h1>
+        <button class="tap text-sm text-red-400 flex items-center gap-1" @click="deleteProgram">
+          <Icon name="trash" class="w-4 h-4" /> Delete program
+        </button>
+      </div>
 
-        <form class="flex gap-2" @submit.prevent="addDay">
-          <input
-            v-model="newDayName"
-            type="text"
-            placeholder="e.g. Day 1 — Push"
-            required
-            class="flex-1 rounded-md bg-slate-800 border border-slate-700 px-3 py-2 text-white focus:outline-none focus:ring-2 focus:ring-cyan-500"
-          >
-          <button
-            type="submit"
-            class="px-4 py-2 rounded-md bg-purple-500 hover:bg-purple-400 text-slate-950 font-semibold transition"
-          >
-            Add day
-          </button>
-        </form>
+      <form class="flex gap-2" @submit.prevent="addDay">
+        <input
+          v-model="newDayName"
+          type="text"
+          placeholder="e.g. Day 1 — Push"
+          required
+          class="flex-1 rounded-lg bg-bg border border-slate-700 px-3 py-2.5 focus:border-accent2 focus:outline-none transition"
+        >
+        <button type="submit" class="tap px-4 py-2.5 rounded-lg bg-accent2 text-bg font-semibold hover:shadow-glow transition">
+          <Icon name="plus" class="w-4 h-4 inline -mt-0.5" /> Add day
+        </button>
+      </form>
 
+      <Transition name="fade">
         <p v-if="errorMessage" class="text-sm text-red-400">{{ errorMessage }}</p>
+      </Transition>
 
+      <TransitionGroup name="list" tag="div" class="space-y-4">
         <section
           v-for="day in program.days"
           :key="day.id"
-          class="rounded-lg bg-slate-900 border border-slate-800 p-5 space-y-4"
+          class="card glow-border rounded-2xl p-5 space-y-4"
         >
           <div class="flex items-center justify-between">
-            <h2 class="font-semibold text-lg">{{ day.name }}</h2>
-            <button class="text-xs text-red-400 hover:underline" @click="deleteDay(day.id)">
-              Remove day
+            <h2 class="font-semibold text-lg flex items-center gap-2">
+              <Icon name="calendar" class="w-4 h-4 text-accent2" /> {{ day.name }}
+            </h2>
+            <button class="tap text-xs text-red-400 flex items-center gap-1" @click="deleteDay(day.id)">
+              <Icon name="trash" class="w-3.5 h-3.5" /> Remove day
             </button>
           </div>
 
-          <ul class="space-y-2">
+          <TransitionGroup name="list" tag="ul" class="space-y-2">
             <li
               v-for="exercise in day.exercises"
               :key="exercise.id"
-              class="flex items-center justify-between rounded-md bg-slate-800 px-3 py-2 text-sm"
+              class="flex items-center justify-between rounded-lg bg-bg/60 border border-slate-800 px-3 py-2 text-sm"
             >
-              <span>
+              <span class="flex items-center gap-2">
+                <Icon name="dumbbell" class="w-4 h-4 text-accent shrink-0" />
                 {{ exercise.name }}
-                <span class="text-slate-400">
-                  — {{ formatTargets(exercise) }}
-                </span>
+                <span class="text-slate-500">— {{ formatTargets(exercise) }}</span>
               </span>
-              <button class="text-red-400 hover:underline text-xs" @click="deleteExercise(exercise.id, day.id)">
-                Remove
+              <button class="tap text-red-400" aria-label="Remove exercise" @click="deleteExercise(exercise.id)">
+                <Icon name="trash" class="w-4 h-4" />
               </button>
             </li>
-            <li v-if="!day.exercises.length" class="text-slate-500 text-sm">No exercises yet.</li>
-          </ul>
+          </TransitionGroup>
+          <p v-if="!day.exercises.length" class="text-slate-500 text-sm">No exercises yet.</p>
 
           <form class="grid grid-cols-2 sm:grid-cols-5 gap-2" @submit.prevent="addExercise(day.id)">
             <input
@@ -66,21 +65,21 @@
               type="text"
               placeholder="Exercise"
               required
-              class="col-span-2 sm:col-span-1 rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="col-span-2 sm:col-span-1 rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
             <input
               v-model="exerciseForms[day.id].targetSets"
               type="number"
               min="1"
               placeholder="Sets"
-              class="rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
             <input
               v-model="exerciseForms[day.id].targetReps"
               type="number"
               min="1"
               placeholder="Reps"
-              class="rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
             <input
               v-model="exerciseForms[day.id].targetWeightKg"
@@ -88,23 +87,24 @@
               min="0"
               step="0.5"
               placeholder="Weight (kg)"
-              class="rounded-md bg-slate-800 border border-slate-700 px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-cyan-500"
+              class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
-            <button
-              type="submit"
-              class="rounded-md bg-cyan-500 hover:bg-cyan-400 text-slate-950 font-semibold text-sm transition"
-            >
+            <button type="submit" class="tap rounded-lg bg-accent text-bg font-semibold text-sm hover:shadow-glow transition">
               Add
             </button>
           </form>
         </section>
-      </template>
-    </main>
+      </TransitionGroup>
+
+      <div v-if="!program.days.length" class="card glow-border rounded-2xl p-6 text-center text-slate-400 text-sm">
+        No days yet. Add one above to start building the plan.
+      </div>
+    </template>
   </div>
 </template>
 
 <script setup lang="ts">
-definePageMeta({ middleware: 'auth' })
+definePageMeta({ middleware: 'auth', layout: 'app' })
 
 interface Exercise {
   id: number
@@ -127,6 +127,7 @@ interface Program {
 
 const route = useRoute()
 const programId = route.params.id
+const { confirm } = useConfirm()
 
 const { data: program, pending, refresh } = await useFetch<Program>(`/api/programs/${programId}`)
 const newDayName = ref('')
@@ -162,6 +163,7 @@ async function addDay() {
 }
 
 async function deleteDay(dayId: number) {
+  if (!(await confirm('Remove this day and all its exercises?'))) return
   await $fetch(`/api/days/${dayId}`, { method: 'DELETE' })
   await refresh()
 }
@@ -187,11 +189,13 @@ async function addExercise(dayId: number) {
 }
 
 async function deleteExercise(exerciseId: number) {
+  if (!(await confirm('Remove this exercise?'))) return
   await $fetch(`/api/exercises/${exerciseId}`, { method: 'DELETE' })
   await refresh()
 }
 
 async function deleteProgram() {
+  if (!(await confirm('Delete this program and all its days/exercises?'))) return
   await $fetch(`/api/programs/${programId}`, { method: 'DELETE' })
   await navigateTo('/programs')
 }
