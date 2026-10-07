@@ -30,6 +30,20 @@ charts, per-user unit settings (kg/lb, km/mi), password-reset email.
 No data migration needed — starting fresh (old deployment has no real
 user data to carry over).
 
+## Local development
+
+Requires **Node >= 22.21.0** (see `.nvmrc`). Nuxt is pinned to `4.5.2`
+rather than `latest` — `4.6.0` (published Oct 2026) has a dev-server
+regression (`Either manifest or precomputed data must be provided` on
+every request); revisit the pin once a patch release fixes it upstream.
+
+```bash
+npm install
+npm run dev
+```
+
+Opens at http://localhost:3000.
+
 ## Core concepts
 - **Program → Day → Exercise → (target sets/reps/weight/distance)**
   Matches a typical "Day 1 / Day 2..." coach program.

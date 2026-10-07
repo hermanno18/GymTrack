@@ -10,3 +10,11 @@ uploads/
 gymtrack_deploy_key
 gymtrack_deploy_key.pub
 .DS_Store
+
+# Node / Nuxt
+node_modules/
+.nuxt/
+.output/
+.data/
+.nitro/
+.cache/
