@@ -60,13 +60,23 @@
           <p v-if="!day.exercises.length" class="text-slate-500 text-sm">No exercises yet.</p>
 
           <form class="grid grid-cols-2 sm:grid-cols-5 gap-2" @submit.prevent="addExercise(day.id)">
-            <input
-              v-model="exerciseForms[day.id].name"
-              type="text"
-              placeholder="Exercise"
-              required
-              class="col-span-2 sm:col-span-1 rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
-            >
+            <div class="col-span-2 sm:col-span-1">
+              <input
+                v-model="exerciseForms[day.id].name"
+                type="text"
+                placeholder="Exercise"
+                required
+                class="w-full rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
+                @input="onNameInput(day.id)"
+              >
+              <Transition name="fade">
+                <p v-if="suggestions[day.id]" class="text-xs text-accent2 mt-1">
+                  Did you mean “{{ suggestions[day.id]!.name }}”?
+                  <button type="button" class="tap underline" @click="useSuggestion(day.id)">Use this</button>
+                  <button type="button" class="tap text-slate-500 ml-1" @click="suggestions[day.id] = null">Dismiss</button>
+                </p>
+              </Transition>
+            </div>
             <input
               v-model="exerciseForms[day.id].targetSets"
               type="number"
@@ -136,6 +146,35 @@ const { data: program, pending, refresh } = await useFetch<Program>(`/api/progra
 const newDayName = ref('')
 const errorMessage = ref('')
 const exerciseForms = reactive<Record<number, { name: string; targetSets: string; targetReps: string; targetWeight: string }>>({})
+const suggestions = reactive<Record<number, { name: string; ratio: number } | null>>({})
+const debounceTimers = new Map<number, ReturnType<typeof setTimeout>>()
+
+function onNameInput(dayId: number) {
+  suggestions[dayId] = null
+  clearTimeout(debounceTimers.get(dayId))
+  const name = exerciseForms[dayId].name.trim()
+  if (name.length < 3) return
+  debounceTimers.set(
+    dayId,
+    setTimeout(async () => {
+      const { match } = await $fetch<{ match: { name: string; ratio: number; exact: boolean } | null }>(
+        '/api/exercises/suggest',
+        { query: { name } },
+      )
+      // Only surface near-duplicates -- an exact match means they're
+      // already typing the canonical name, nothing to catch.
+      if (match && !match.exact && exerciseForms[dayId].name.trim() === name) {
+        suggestions[dayId] = match
+      }
+    }, 400),
+  )
+}
+
+function useSuggestion(dayId: number) {
+  const match = suggestions[dayId]
+  if (match) exerciseForms[dayId].name = match.name
+  suggestions[dayId] = null
+}
 
 watchEffect(() => {
   for (const day of program.value?.days ?? []) {
@@ -187,6 +226,7 @@ async function addExercise(dayId: number) {
       },
     })
     exerciseForms[dayId] = { name: '', targetSets: '', targetReps: '', targetWeight: '' }
+    suggestions[dayId] = null
     await refresh()
   } catch (err: any) {
     errorMessage.value = err?.data?.statusMessage || 'Could not add exercise'
