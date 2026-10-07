@@ -18,10 +18,10 @@
         </div>
       </div>
       <NuxtLink
-        to="/programs"
+        to="/log"
         class="tap relative mt-5 inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-accent to-accent2 text-bg font-bold pulse-cta"
       >
-        <Icon name="dumbbell" class="w-5 h-5" /> Build a Program
+        <Icon name="dumbbell" class="w-5 h-5" /> Log a Workout
       </NuxtLink>
     </div>
 
@@ -32,8 +32,8 @@
       <NuxtLink to="/programs" class="text-sm text-accent hover:underline">+ New</NuxtLink>
     </div>
 
-    <div v-if="pending" class="text-slate-400 text-sm">Loading…</div>
-    <div v-else class="grid md:grid-cols-2 gap-4">
+    <div v-if="programsPending" class="text-slate-400 text-sm mb-6">Loading…</div>
+    <div v-else class="grid md:grid-cols-2 gap-4 mb-6">
       <TransitionGroup v-if="programs?.length" name="list">
         <NuxtLink
           v-for="program in programs"
@@ -48,12 +48,27 @@
         No programs yet. <NuxtLink to="/programs" class="text-accent hover:underline">Start from scratch</NuxtLink> to get going.
       </p>
     </div>
+
+    <div class="flex items-center justify-between mb-3">
+      <h2 class="text-lg font-semibold flex items-center gap-2">
+        <Icon name="calendar" class="w-5 h-5 text-accent2" /> Recent Sessions
+      </h2>
+      <NuxtLink v-if="recentSessions?.length" to="/history" class="text-sm text-accent hover:underline">See all &rarr;</NuxtLink>
+    </div>
+    <div v-if="sessionsPending" class="text-slate-400 text-sm">Loading…</div>
+    <div v-else-if="recentSessions?.length" class="space-y-3">
+      <SessionTile v-for="session in recentSessions" :key="session.id" :session="session" />
+    </div>
+    <div v-else class="card glow-border rounded-2xl p-4">
+      <p class="text-slate-400 text-sm">No workouts logged yet — tap "Log a Workout" above to start your streak.</p>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
 definePageMeta({ middleware: 'auth', layout: 'app' })
 
-const { data: programs, pending } = await useFetch('/api/programs')
+const { data: programs, pending: programsPending } = await useFetch('/api/programs')
 const { data: summary } = await useFetch('/api/dashboard/summary')
+const { data: recentSessions, pending: sessionsPending } = await useFetch('/api/sessions', { query: { limit: 5 } })
 </script>
