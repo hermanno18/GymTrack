@@ -4,25 +4,31 @@ A lightweight, multi-user workout tracker. Upload your coach's PDF training
 program (or build one by hand), log your actual sets/reps/weight/distance
 per session, and watch your progression over time.
 
-## Stack
-- Flask (WSGI -- deliberately, so it runs cleanly on cPanel/Passenger shared hosting)
-- SQLite (single-file, standalone DB, lives in `instance/gymtrack.db`)
-- HTMX + Tailwind (CDN) for a snappy, no-build-step frontend
-- Chart.js for progression charts
-- pdfplumber for PDF text extraction
+> **Status: mid-rewrite.** This branch (`nuxt-rewrite`) is converting the
+> project from Flask to Nuxt 4. The original, fully-working Flask
+> implementation is preserved under [`legacy-flask/`](./legacy-flask/) and
+> stays deployed until the Nuxt version reaches feature parity. See
+> `legacy-flask/README.md` for why.
 
-## Local development
+## Stack (Nuxt rewrite, in progress)
+- Nuxt 4 (SSR, Nitro `node-server` preset) — deployed via cPanel's
+  "Setup Node.js App" (Passenger), same pattern as the old Flask app used
+  for Python
+- Drizzle ORM + `better-sqlite3` (single-file DB, same storage model as before)
+- `nuxt-auth-utils` for sessions, `nuxt-csurf` for CSRF
+- `@nuxtjs/tailwindcss`
+- `vue-chartjs` (Chart.js) for progression charts
+- PDF parsing: TBD in Phase 2 (`unpdf`/`pdf-parse`, replacing `pdfplumber`)
 
-```bash
-uv venv
-.venv\Scripts\activate        # Windows
-# source .venv/bin/activate   # macOS/Linux
-uv pip install -r requirements.txt
-python run.py
-```
+## Rewrite scope
+**Phase 1 (MVP):** auth + multi-user isolation, manual program builder
+(Program → Day → Exercise), workout logging.
+**Phase 2:** PDF upload/parsing with manual-builder fallback, fuzzy
+exercise-name matching + cross-program history carryover, progression
+charts, per-user unit settings (kg/lb, km/mi), password-reset email.
 
-Opens automatically at http://127.0.0.1:5000. The SQLite DB and any
-uploaded PDFs are stored under `instance/` (auto-created, git-ignored).
+No data migration needed — starting fresh (old deployment has no real
+user data to carry over).
 
 ## Core concepts
 - **Program → Day → Exercise → (target sets/reps/weight/distance)**
@@ -36,18 +42,7 @@ uploaded PDFs are stored under `instance/` (auto-created, git-ignored).
 - **Units are a per-user setting** (kg/lb, km/mi). Everything is stored
   internally in kg/km and converted only for display/input.
 
-## Testing
-
-```bash
-uv pip install -r requirements-dev.txt
-pytest
-```
-
-47 tests covering: unit conversion & fuzzy-name matching, the PDF-text
-parser, auth + multi-user data isolation, the program builder (days/
-exercises/duplicate suggestions), PDF upload fallback paths, workout
-logging, cross-program history carryover, and CSRF protection. Tests are
-grouped one file per feature area under `tests/`.
-
 ## Deployment
-See `DEPLOY.md` for the WHC/cPanel Passenger deployment walkthrough.
+New `DEPLOY.md` for the Nuxt/Node cPanel setup lands once Phase 1 is
+deployable. Until then, see `legacy-flask/DEPLOY.md` for the Flask
+version's WHC/cPanel Passenger walkthrough.
