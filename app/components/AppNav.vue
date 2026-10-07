@@ -9,6 +9,7 @@
         <NuxtLink to="/programs" class="hover:text-accent transition">Programs</NuxtLink>
         <NuxtLink to="/log" class="hover:text-accent transition">Log Workout</NuxtLink>
         <NuxtLink to="/history" class="hover:text-accent transition">History</NuxtLink>
+        <NuxtLink to="/progress" class="hover:text-accent transition">Progress</NuxtLink>
         <NuxtLink to="/settings" class="hover:text-accent transition">Settings</NuxtLink>
         <button class="text-slate-400 hover:text-red-400 transition" @click="logout">Logout</button>
       </div>
@@ -24,7 +25,7 @@
   </nav>
 
   <nav class="bottom-nav md:hidden fixed bottom-0 inset-x-0 z-20 bg-panel/95 backdrop-blur border-t border-cyan-500/20">
-    <div class="grid grid-cols-4 text-center text-[10px] text-slate-400">
+    <div class="grid grid-cols-5 text-center text-[10px] text-slate-400">
       <NuxtLink to="/dashboard" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
         <Icon name="home" class="w-5 h-5" /><span>Home</span>
       </NuxtLink>
@@ -35,6 +36,9 @@
         <span class="w-14 h-14 rounded-full bg-gradient-to-br from-accent to-accent2 text-bg flex items-center justify-center shadow-glow pulse-cta">
           <Icon name="plus" class="w-7 h-7" />
         </span>
+      </NuxtLink>
+      <NuxtLink to="/progress" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
+        <Icon name="chart" class="w-5 h-5" /><span>Progress</span>
       </NuxtLink>
       <NuxtLink to="/history" class="tap flex flex-col items-center py-2 gap-0.5 hover:text-accent">
         <Icon name="calendar" class="w-5 h-5" /><span>History</span>
