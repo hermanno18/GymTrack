@@ -30,6 +30,20 @@ export default defineEventHandler(async (event) => {
     id: session.id,
     performedAt: session.performedAt,
     dayName: day?.name ?? 'Ad-hoc',
-    exercises: exerciseOrder.map((name) => ({ name, sets: grouped.get(name) })),
+    startTime: session.startTime,
+    endTime: session.endTime,
+    exercises: exerciseOrder.map((name) => {
+      const exerciseSets = grouped.get(name)!
+      const first = exerciseSets[0]
+      return {
+        name,
+        sets: exerciseSets,
+        // Guided-Session-only timing, stamped on the setNumber=1 row --
+        // null for manual/ad-hoc logging (see schema.ts).
+        startedAt: first.startedAt,
+        workSeconds: first.workSeconds,
+        restSeconds: first.restSeconds,
+      }
+    }),
   }
 })

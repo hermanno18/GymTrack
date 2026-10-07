@@ -40,6 +40,11 @@ export const workoutSessions = sqliteTable('workout_sessions', {
   userId: integer('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
   programDayId: integer('program_day_id').references(() => programDays.id, { onDelete: 'set null' }),
   performedAt: text('performed_at').notNull().default(sql`(current_timestamp)`),
+  // Wall-clock "HH:MM", set only by Guided Session mode -- manual/ad-hoc
+  // logging never populates these, which is exactly what lets the Story
+  // timeline degrade gracefully (see workoutSets timing fields below).
+  startTime: text('start_time'),
+  endTime: text('end_time'),
 })
 
 export const workoutSets = sqliteTable('workout_sets', {
@@ -52,4 +57,12 @@ export const workoutSets = sqliteTable('workout_sets', {
   reps: integer('reps'),
   weightKg: real('weight_kg'),
   distanceKm: real('distance_km'),
+  // Guided-Session-only timing, tracked per EXERCISE (not per set -- the
+  // live timer accumulates work/rest across all of an exercise's sets as
+  // one block). Stored only on the setNumber=1 row for that exercise/
+  // session pair so summing across all rows in a session never double-
+  // counts. Null for manual/ad-hoc logging.
+  startedAt: text('started_at'), // "HH:MM:SS"
+  workSeconds: integer('work_seconds'),
+  restSeconds: integer('rest_seconds'),
 })

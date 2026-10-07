@@ -9,17 +9,25 @@
       <div v-for="program in programsWithDays" :key="program.id" class="card glow-border rounded-2xl p-6 mb-4">
         <h2 class="font-semibold text-accent mb-3">{{ program.name }}</h2>
         <div class="space-y-1.5">
-          <NuxtLink
-            v-for="day in program.days"
-            :key="day.id"
-            :to="`/log/${day.id}`"
-            class="tap flex items-center gap-3 bg-bg/40 hover:bg-bg/70 rounded-xl px-3 py-2.5 transition"
-          >
-            <span class="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent2 text-bg flex items-center justify-center shrink-0">
-              <Icon name="play" class="w-3.5 h-3.5" />
-            </span>
-            <span class="text-sm font-medium truncate">{{ day.name }}</span>
-          </NuxtLink>
+          <div v-for="day in program.days" :key="day.id" class="flex items-center gap-2">
+            <NuxtLink
+              :to="`/guided/${day.id}`"
+              class="tap flex-1 min-w-0 flex items-center gap-3 bg-bg/40 hover:bg-bg/70 rounded-xl px-3 py-2.5 transition"
+            >
+              <span class="w-8 h-8 rounded-full bg-gradient-to-br from-accent to-accent2 text-bg flex items-center justify-center shrink-0">
+                <Icon name="play" class="w-3.5 h-3.5" />
+              </span>
+              <span class="text-sm font-medium truncate">{{ day.name }}</span>
+            </NuxtLink>
+            <NuxtLink
+              :to="`/log/${day.id}`"
+              class="tap shrink-0 p-2.5 rounded-lg text-slate-500 hover:text-accent hover:bg-bg/40 transition"
+              :aria-label="`Manually log ${day.name}`"
+              title="Quick manual log"
+            >
+              <Icon name="edit" class="w-4 h-4" />
+            </NuxtLink>
+          </div>
         </div>
       </div>
 

@@ -15,6 +15,13 @@
       "when": 1791409960326,
       "tag": "0001_old_spacker_dave",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1791415193112,
+      "tag": "0002_married_rocket_racer",
+      "breakpoints": true
     }
   ]
 }

@@ -34,6 +34,7 @@ const icons: Record<string, IconDef> = {
   edit: { inner: '<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>' },
   'chevron-down': { inner: '<path d="m6 9 6 6 6-6"/>' },
   trophy: { inner: '<path d="M8 21h8"/><path d="M12 17v4"/><path d="M7 4h10v5a5 5 0 0 1-10 0Z"/><path d="M7 5H4a2 2 0 0 0 0 4h.5"/><path d="M17 5h3a2 2 0 0 1 0 4h-.5"/>' },
+  play: { inner: '<path d="M6 3v18l15-9Z"/>', fill: true },
 }
 
 const icon = computed(() => icons[props.name] ?? icons.alert)

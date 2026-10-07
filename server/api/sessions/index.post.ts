@@ -25,16 +25,7 @@ export default defineEventHandler(async (event) => {
     .returning()
     .get()
 
-  const setRows = loggedExercises.flatMap((ex) =>
-    Array.from({ length: ex.sets }, (_, i) => ({
-      sessionId: session.id,
-      exerciseName: ex.name,
-      setNumber: i + 1,
-      reps: ex.reps ?? null,
-      weightKg: ex.weightKg ?? null,
-      distanceKm: ex.distanceKm ?? null,
-    })),
-  )
+  const setRows = loggedExercises.flatMap((ex) => expandExerciseToSetRows(session.id, ex))
   if (setRows.length) {
     db.insert(workoutSets).values(setRows).run()
   }
