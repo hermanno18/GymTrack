@@ -82,11 +82,11 @@
               class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
             <input
-              v-model="exerciseForms[day.id].targetWeightKg"
+              v-model="exerciseForms[day.id].targetWeight"
               type="number"
               min="0"
               step="0.5"
-              placeholder="Weight (kg)"
+              :placeholder="`Weight (${weightUnit})`"
               class="rounded-lg bg-bg border border-slate-700 px-2 py-1.5 text-sm focus:border-accent focus:outline-none transition"
             >
             <button type="submit" class="tap rounded-lg bg-accent text-bg font-semibold text-sm hover:shadow-glow transition">
@@ -129,15 +129,18 @@ const route = useRoute()
 const programId = route.params.id
 const { confirm } = useConfirm()
 
+const { user } = useUserSession()
+const weightUnit = computed(() => user.value?.weightUnit ?? 'kg')
+
 const { data: program, pending, refresh } = await useFetch<Program>(`/api/programs/${programId}`)
 const newDayName = ref('')
 const errorMessage = ref('')
-const exerciseForms = reactive<Record<number, { name: string; targetSets: string; targetReps: string; targetWeightKg: string }>>({})
+const exerciseForms = reactive<Record<number, { name: string; targetSets: string; targetReps: string; targetWeight: string }>>({})
 
 watchEffect(() => {
   for (const day of program.value?.days ?? []) {
     if (!exerciseForms[day.id]) {
-      exerciseForms[day.id] = { name: '', targetSets: '', targetReps: '', targetWeightKg: '' }
+      exerciseForms[day.id] = { name: '', targetSets: '', targetReps: '', targetWeight: '' }
     }
   }
 })
@@ -146,8 +149,10 @@ function formatTargets(ex: Exercise) {
   const parts = []
   if (ex.targetSets) parts.push(`${ex.targetSets} sets`)
   if (ex.targetReps) parts.push(`${ex.targetReps} reps`)
-  if (ex.targetWeightKg) parts.push(`${ex.targetWeightKg}kg`)
-  if (ex.targetDistanceKm) parts.push(`${ex.targetDistanceKm}km`)
+  const displayWeight = kgToDisplay(ex.targetWeightKg, weightUnit.value)
+  if (displayWeight) parts.push(`${displayWeight}${weightUnit.value}`)
+  const displayDistance = kmToDisplay(ex.targetDistanceKm, user.value?.distanceUnit ?? 'km')
+  if (displayDistance) parts.push(`${displayDistance}${user.value?.distanceUnit ?? 'km'}`)
   return parts.length ? parts.join(' · ') : 'no target set'
 }
 
@@ -178,10 +183,10 @@ async function addExercise(dayId: number) {
         name: form.name,
         targetSets: form.targetSets || null,
         targetReps: form.targetReps || null,
-        targetWeightKg: form.targetWeightKg || null,
+        targetWeightKg: displayToKg(form.targetWeight, weightUnit.value),
       },
     })
-    exerciseForms[dayId] = { name: '', targetSets: '', targetReps: '', targetWeightKg: '' }
+    exerciseForms[dayId] = { name: '', targetSets: '', targetReps: '', targetWeight: '' }
     await refresh()
   } catch (err: any) {
     errorMessage.value = err?.data?.statusMessage || 'Could not add exercise'

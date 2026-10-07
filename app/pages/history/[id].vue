@@ -30,6 +30,7 @@ interface SetRow { id: number; setNumber: number; reps: number | null; weightKg:
 interface ExerciseGroup { name: string; sets: SetRow[] }
 interface SessionDetail { id: number; performedAt: string; dayName: string; exercises: ExerciseGroup[] }
 
+const { user } = useUserSession()
 const route = useRoute()
 const { data: session, pending } = await useFetch<SessionDetail>(`/api/sessions/${route.params.id}`)
 
@@ -41,8 +42,12 @@ const formattedDate = computed(() => {
 function formatSet(set: SetRow) {
   const parts = []
   if (set.reps) parts.push(`${set.reps} reps`)
-  if (set.weightKg) parts.push(`${set.weightKg}kg`)
-  if (set.distanceKm) parts.push(`${set.distanceKm}km`)
+  const weightUnit = user.value?.weightUnit ?? 'kg'
+  const distanceUnit = user.value?.distanceUnit ?? 'km'
+  const displayWeight = kgToDisplay(set.weightKg, weightUnit)
+  if (displayWeight) parts.push(`${displayWeight}${weightUnit}`)
+  const displayDistance = kmToDisplay(set.distanceKm, distanceUnit)
+  if (displayDistance) parts.push(`${displayDistance}${distanceUnit}`)
   return parts.length ? parts.join(' · ') : '—'
 }
 </script>

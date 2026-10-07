@@ -9,9 +9,13 @@
         <NuxtLink to="/programs" class="hover:text-accent transition">Programs</NuxtLink>
         <NuxtLink to="/log" class="hover:text-accent transition">Log Workout</NuxtLink>
         <NuxtLink to="/history" class="hover:text-accent transition">History</NuxtLink>
+        <NuxtLink to="/settings" class="hover:text-accent transition">Settings</NuxtLink>
         <button class="text-slate-400 hover:text-red-400 transition" @click="logout">Logout</button>
       </div>
       <div class="flex md:hidden items-center gap-4">
+        <NuxtLink to="/settings" class="text-slate-300" aria-label="Settings">
+          <Icon name="settings" class="w-5 h-5" />
+        </NuxtLink>
         <button class="text-slate-400" aria-label="Logout" @click="logout">
           <Icon name="power" class="w-5 h-5" />
         </button>

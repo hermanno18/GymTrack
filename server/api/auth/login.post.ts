@@ -22,7 +22,7 @@ export default defineEventHandler(async (event) => {
   }
 
   await setUserSession(event, {
-    user: { id: user.id, email: user.email },
+    user: { id: user.id, email: user.email, weightUnit: user.weightUnit, distanceUnit: user.distanceUnit },
   })
 
   return { ok: true }

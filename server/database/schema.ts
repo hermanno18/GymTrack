@@ -5,6 +5,8 @@ export const users = sqliteTable('users', {
   id: integer('id').primaryKey({ autoIncrement: true }),
   email: text('email').notNull().unique(),
   passwordHash: text('password_hash').notNull(),
+  weightUnit: text('weight_unit').notNull().default('kg'), // 'kg' | 'lb'
+  distanceUnit: text('distance_unit').notNull().default('km'), // 'km' | 'mi'
   createdAt: text('created_at').notNull().default(sql`(current_timestamp)`),
 })
 

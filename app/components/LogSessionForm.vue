@@ -41,12 +41,12 @@
             <input v-model="row.reps" type="number" min="0" inputmode="numeric" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5 focus:border-accent focus:outline-none transition">
           </div>
           <div>
-            <label class="block text-[11px] text-slate-500 mb-1">Wt (kg)</label>
-            <input v-model="row.weightKg" type="number" min="0" step="0.5" inputmode="decimal" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5 focus:border-accent focus:outline-none transition">
+            <label class="block text-[11px] text-slate-500 mb-1">Wt ({{ weightUnit }})</label>
+            <input v-model="row.weight" type="number" min="0" step="0.5" inputmode="decimal" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5 focus:border-accent focus:outline-none transition">
           </div>
           <div>
-            <label class="block text-[11px] text-slate-500 mb-1">Dist (km)</label>
-            <input v-model="row.distanceKm" type="number" min="0" step="0.1" inputmode="decimal" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5 focus:border-accent focus:outline-none transition">
+            <label class="block text-[11px] text-slate-500 mb-1">Dist ({{ distanceUnit }})</label>
+            <input v-model="row.distance" type="number" min="0" step="0.1" inputmode="decimal" class="w-full text-base text-center rounded-lg bg-bg border border-slate-700 py-2.5 focus:border-accent focus:outline-none transition">
           </div>
         </div>
       </div>
@@ -83,12 +83,16 @@ interface Row {
   editableName: boolean
   sets: string
   reps: string
-  weightKg: string
-  distanceKm: string
+  weight: string
+  distance: string
   targetHint: string
 }
 
 const props = defineProps<{ dayId: number | null; presetExercises?: PresetExercise[] }>()
+
+const { user } = useUserSession()
+const weightUnit = computed(() => user.value?.weightUnit ?? 'kg')
+const distanceUnit = computed(() => user.value?.distanceUnit ?? 'km')
 
 let keyCounter = 0
 function makeRow(partial: Partial<Row> = {}): Row {
@@ -98,8 +102,8 @@ function makeRow(partial: Partial<Row> = {}): Row {
     editableName: true,
     sets: '1',
     reps: '',
-    weightKg: '',
-    distanceKm: '',
+    weight: '',
+    distance: '',
     targetHint: '',
     ...partial,
   }
@@ -109,7 +113,8 @@ function targetHintFor(ex: PresetExercise) {
   const parts = []
   if (ex.targetSets) parts.push(`${ex.targetSets} sets`)
   if (ex.targetReps) parts.push(`${ex.targetReps} reps`)
-  if (ex.targetWeightKg) parts.push(`${ex.targetWeightKg}kg`)
+  const displayWeight = kgToDisplay(ex.targetWeightKg, weightUnit.value)
+  if (displayWeight) parts.push(`${displayWeight}${weightUnit.value}`)
   return parts.join(' · ')
 }
 
@@ -120,7 +125,7 @@ const rows = ref<Row[]>(
       editableName: false,
       sets: String(ex.targetSets ?? 1),
       reps: ex.targetReps ? String(ex.targetReps) : '',
-      weightKg: ex.targetWeightKg ? String(ex.targetWeightKg) : '',
+      weight: kgToDisplay(ex.targetWeightKg, weightUnit.value)?.toString() ?? '',
       targetHint: targetHintFor(ex),
     }),
   ),
@@ -150,8 +155,8 @@ async function submit() {
             name: r.name.trim(),
             sets: Number(r.sets) || 1,
             reps: r.reps ? Number(r.reps) : null,
-            weightKg: r.weightKg ? Number(r.weightKg) : null,
-            distanceKm: r.distanceKm ? Number(r.distanceKm) : null,
+            weightKg: displayToKg(r.weight, weightUnit.value),
+            distanceKm: displayToKm(r.distance, distanceUnit.value),
           })),
       },
     })
