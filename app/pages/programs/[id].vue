@@ -9,6 +9,12 @@
         </button>
       </div>
 
+      <Transition name="fade">
+        <p v-if="importedMessage" class="text-sm text-accent bg-accent/10 border border-accent/30 rounded-lg px-3 py-2">
+          {{ importedMessage }}
+        </p>
+      </Transition>
+
       <form class="flex gap-2" @submit.prevent="addDay">
         <input
           v-model="newDayName"
@@ -138,6 +144,13 @@ interface Program {
 const route = useRoute()
 const programId = route.params.id
 const { confirm } = useConfirm()
+
+// One-shot banner after /programs/upload redirects here; cleared so it
+// doesn't linger if the user refreshes the page.
+const importedMessage = ref(typeof route.query.imported === 'string' ? route.query.imported : '')
+if (importedMessage.value) {
+  navigateTo({ path: route.path }, { replace: true })
+}
 
 const { user } = useUserSession()
 const weightUnit = computed(() => user.value?.weightUnit ?? 'kg')

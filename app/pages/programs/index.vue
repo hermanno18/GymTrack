@@ -4,6 +4,9 @@
       <h1 class="text-2xl font-bold flex items-center gap-2">
         <Icon name="clipboard" class="w-6 h-6 text-accent" /> Your Programs
       </h1>
+      <NuxtLink to="/programs/upload" class="tap text-sm text-accent2 flex items-center gap-1 hover:underline">
+        <Icon name="upload" class="w-4 h-4" /> Upload PDF
+      </NuxtLink>
     </div>
 
     <form class="flex gap-2 mb-6" @submit.prevent="createProgram">
