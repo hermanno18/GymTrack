@@ -41,6 +41,9 @@
             autocomplete="current-password"
             class="w-full rounded-lg bg-bg border border-slate-700 px-3 py-2 focus:border-accent focus:outline-none transition"
           >
+          <NuxtLink to="/forgot-password" class="block text-right text-xs text-slate-500 hover:text-accent mt-1">
+            Forgot password?
+          </NuxtLink>
         </div>
 
         <button
